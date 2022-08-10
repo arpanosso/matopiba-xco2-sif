@@ -21,11 +21,12 @@ sif_771: 2.57743\*10^-19
 oco2_br <- oco2_br %>% 
   mutate(
     sif_757 = fluorescence_radiance_757nm_idp_ph_sec_1_m_2_sr_1_um_1*2.6250912*10^(-19),
-    sif_771 = fluorescence_radiance_771nm_idp_ph_sec_1_m_2_sr_1_um_1* 2.57743*10^(-19)
+    sif_771 = fluorescence_radiance_771nm_idp_ph_sec_1_m_2_sr_1_um_1* 2.57743*10^(-19),
+    SIF = (sif_757 + 1.5*sif_771)/2
   )
 oco2_br %>% glimpse()
 #> Rows: 37,387
-#> Columns: 34
+#> Columns: 35
 #> $ longitude                                                     <dbl> -70.5, -~
 #> $ longitude_bnds                                                <chr> "-71.0:-~
 #> $ latitude                                                      <dbl> -5.5, -4~
@@ -60,6 +61,7 @@ oco2_br %>% glimpse()
 #> $ flag_centroeste                                               <lgl> FALSE, F~
 #> $ sif_757                                                       <dbl> 0.666019~
 #> $ sif_771                                                       <dbl> 0.796060~
+#> $ SIF                                                           <dbl> 0.930054~
 ```
 
 ## Definição da região de trabalho
