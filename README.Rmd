@@ -13,12 +13,29 @@ knitr::opts_chunk$set(
 
 ## Pacotes exigidos
 
-```{r}
+```{r, error=FALSE, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(geobr)
 library(fco2r)
 source("r/graficos.R")
 source("r/funcoes.R")
+```
+
+## Correção do sinal de SIF
+
+sif_757: 2.6250912*10^-19  
+
+sif_771: 2.57743*10^-19
+
+
+
+```{r}
+oco2_br <- oco2_br %>% 
+  mutate(
+    sif_757 = fluorescence_radiance_757nm_idp_ph_sec_1_m_2_sr_1_um_1*2.6250912*10^(-19),
+    sif_771 = fluorescence_radiance_771nm_idp_ph_sec_1_m_2_sr_1_um_1* 2.57743*10^(-19)
+  )
+oco2_br %>% glimpse()
 ```
 
 
