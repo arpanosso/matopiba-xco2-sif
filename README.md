@@ -195,3 +195,7 @@ tab_oco2_sif_media <- data_set  %>%  filter(SIF >= 0) %>%
 #> `.groups` argument.
 write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif.xlsx")
 ```
+
+## Faça o download da tabela de médias
+
+[medias_oco2_sif.xlsx](https://github.com/arpanosso/matopiba-xco2-sif/raw/master/data/medias_oco2_sif.xlsx)
