@@ -116,3 +116,130 @@ matopiba %>%
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+# Análise de série espaço-temporal
+
+## Gráfico de concentração de CO2
+
+``` r
+data_set  %>%  
+    tidyr::pivot_longer(
+    dplyr::starts_with("flag"),
+    names_to = "região",
+    values_to = "flag"
+  ) %>% 
+  dplyr::filter(flag)  %>%  
+  dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
+  dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
+  dplyr::group_by(região, ano, mes) %>%  
+  dplyr::summarise(media_co2 = mean(XCO2, na.rm=TRUE)) %>% 
+    dplyr::mutate(
+    mes_ano = lubridate::make_date(ano, mes, 1)
+  )  %>%  
+  ggplot2::ggplot(ggplot2::aes(x = mes_ano, y = media_co2,
+                               color=região)) +
+  ggplot2::geom_line() +
+  ggplot2::theme_bw()
+#> `summarise()` has grouped output by 'região', 'ano'. You can override using the
+#> `.groups` argument.
+```
+
+![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+## Tablea de médias de FCO2
+
+``` r
+data_set  %>%  
+    tidyr::pivot_longer(
+    dplyr::starts_with("flag"),
+    names_to = "região",
+    values_to = "flag"
+  ) %>% 
+  dplyr::filter(flag)  %>%  
+  dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
+  dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
+  dplyr::group_by(região, ano, mes) %>%  
+  dplyr::summarise(media_co2 = mean(XCO2, na.rm=TRUE)) %>% 
+    dplyr::mutate(
+    mes_ano = lubridate::make_date(ano, mes, 1)
+  ) 
+#> `summarise()` has grouped output by 'região', 'ano'. You can override using the
+#> `.groups` argument.
+#> # A tibble: 256 x 5
+#> # Groups:   região, ano [28]
+#>    região   ano   mes media_co2 mes_ano   
+#>    <chr>  <dbl> <dbl>     <dbl> <date>    
+#>  1 ba      2014     9      385. 2014-09-01
+#>  2 ba      2014    10      386. 2014-10-01
+#>  3 ba      2014    11      386. 2014-11-01
+#>  4 ba      2014    12      384. 2014-12-01
+#>  5 ba      2015     1      385. 2015-01-01
+#>  6 ba      2015     2      384. 2015-02-01
+#>  7 ba      2015     3      383. 2015-03-01
+#>  8 ba      2015     4      383. 2015-04-01
+#>  9 ba      2015     5      385. 2015-05-01
+#> 10 ba      2015     6      386. 2015-06-01
+#> # ... with 246 more rows
+```
+
+## Gráfico de concentração de SIF
+
+``` r
+data_set  %>%  filter(SIF >= 0) %>% 
+    tidyr::pivot_longer(
+    dplyr::starts_with("flag"),
+    names_to = "região",
+    values_to = "flag"
+  ) %>% 
+  dplyr::filter(flag)  %>%  
+  dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
+  dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
+  dplyr::group_by(região, ano, mes) %>%  
+  dplyr::summarise(media_sif = mean(SIF, na.rm=TRUE)) %>% 
+    dplyr::mutate(
+    mes_ano = lubridate::make_date(ano, mes, 1)
+  )  %>%  
+  ggplot2::ggplot(ggplot2::aes(x = mes_ano, y = media_sif,
+                               color=região)) +
+  ggplot2::geom_line() +
+  ggplot2::theme_bw()
+#> `summarise()` has grouped output by 'região', 'ano'. You can override using the
+#> `.groups` argument.
+```
+
+![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- --> \## Tablea
+de médias de FCO2
+
+``` r
+data_set  %>%  filter(SIF >= 0) %>% 
+    tidyr::pivot_longer(
+    dplyr::starts_with("flag"),
+    names_to = "região",
+    values_to = "flag"
+  ) %>% 
+  dplyr::filter(flag)  %>%  
+  dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
+  dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
+  dplyr::group_by(região, ano, mes) %>%  
+  dplyr::summarise(media_sif = mean(SIF, na.rm=TRUE)) %>% 
+    dplyr::mutate(
+    mes_ano = lubridate::make_date(ano, mes, 1)
+  )
+#> `summarise()` has grouped output by 'região', 'ano'. You can override using the
+#> `.groups` argument.
+#> # A tibble: 256 x 5
+#> # Groups:   região, ano [28]
+#>    região   ano   mes media_sif mes_ano   
+#>    <chr>  <dbl> <dbl>     <dbl> <date>    
+#>  1 ba      2014     9     0.406 2014-09-01
+#>  2 ba      2014    10     0.422 2014-10-01
+#>  3 ba      2014    11     0.564 2014-11-01
+#>  4 ba      2014    12     0.904 2014-12-01
+#>  5 ba      2015     1     0.765 2015-01-01
+#>  6 ba      2015     2     0.680 2015-02-01
+#>  7 ba      2015     3     0.917 2015-03-01
+#>  8 ba      2015     4     0.638 2015-04-01
+#>  9 ba      2015     5     0.434 2015-05-01
+#> 10 ba      2015     6     0.455 2015-06-01
+#> # ... with 246 more rows
+```

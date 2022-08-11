@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
 library(tidyverse)
 library(geobr)
 library(fco2r)
+library(writexl)
 source("r/graficos.R")
 source("r/funcoes.R")
 ```
@@ -87,3 +88,68 @@ matopiba %>%
                       alpha=0.2)
 ```
 
+# Análise de série espaço-temporal
+
+## Gráfico de concentração de CO2
+```{r}
+data_set  %>%  
+    tidyr::pivot_longer(
+    dplyr::starts_with("flag"),
+    names_to = "região",
+    values_to = "flag"
+  ) %>% 
+  dplyr::filter(flag)  %>%  
+  dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
+  dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
+  dplyr::group_by(região, ano, mes) %>%  
+  dplyr::summarise(media_co2 = mean(XCO2, na.rm=TRUE)) %>% 
+    dplyr::mutate(
+    mes_ano = lubridate::make_date(ano, mes, 1)
+  )  %>%  
+  ggplot2::ggplot(ggplot2::aes(x = mes_ano, y = media_co2,
+                               color=região)) +
+  ggplot2::geom_line() +
+  ggplot2::theme_bw()
+```
+
+
+## Gráfico do SIF
+```{r}
+data_set  %>%  filter(SIF >= 0) %>% 
+    tidyr::pivot_longer(
+    dplyr::starts_with("flag"),
+    names_to = "região",
+    values_to = "flag"
+  ) %>% 
+  dplyr::filter(flag)  %>%  
+  dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
+  dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
+  dplyr::group_by(região, ano, mes) %>%  
+  dplyr::summarise(media_sif = mean(SIF, na.rm=TRUE)) %>% 
+    dplyr::mutate(
+    mes_ano = lubridate::make_date(ano, mes, 1)
+  )  %>%  
+  ggplot2::ggplot(ggplot2::aes(x = mes_ano, y = media_sif,
+                               color=região)) +
+  ggplot2::geom_line() +
+  ggplot2::theme_bw()
+```
+## Tablea de médias de FCO2
+```{r}
+tab_oco2_sif_media <- data_set  %>%  filter(SIF >= 0) %>% 
+    tidyr::pivot_longer(
+    dplyr::starts_with("flag"),
+    names_to = "região",
+    values_to = "flag"
+  ) %>% 
+  dplyr::filter(flag)  %>%  
+  dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
+  dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
+  dplyr::group_by(região, ano, mes) %>%  
+  dplyr::summarise(media_sif = mean(SIF, na.rm=TRUE),
+                   media_co2 = mean(XCO2, na.rm=TRUE)) %>% 
+    dplyr::mutate(
+    mes_ano = lubridate::make_date(ano, mes, 1)
+  )
+write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif.xlsx")
+```
