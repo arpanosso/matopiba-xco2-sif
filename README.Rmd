@@ -7,17 +7,22 @@ output: github_document
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  message = FALSE,
+  erro = FALSE,
+  warning = FALSE
 )
 ```
 
 ## Pacotes exigidos
 
-```{r, error=FALSE, warning=FALSE, message=FALSE}
+```{r}
 library(tidyverse)
 library(geobr)
 library(fco2r)
 library(writexl)
+library(sp)
+library(gstat)
 source("r/graficos.R")
 source("r/funcoes.R")
 ```
@@ -43,7 +48,7 @@ oco2_br %>% glimpse()
 
 ## Definição da região de trabalho
 
-```{r}
+```{r,message=FALSE, warning=FALSE, error= FALSE}
 estados <- read_state(showProgress = FALSE)
 matopiba_filtro <- estados$abbrev_state %in% c("MA","PI","TO","BA")
 matopiba <- estados$geom[matopiba_filtro] 
@@ -56,11 +61,18 @@ matopiba %>%
 
 ## Dados de xCO2 e SIF
 
+Inicialmente vamos extrair os polígonos com os limites dos estados do objegio gerado pelo `{geobr}`.
+
 ```{r}
 pol_to <- estados$geom %>% purrr::pluck(7) %>% as.matrix()
 pol_ma <- estados$geom %>% purrr::pluck(8) %>% as.matrix()
 pol_ba <- estados$geom %>% purrr::pluck(16) %>% as.matrix()
 pol_pi <- estados$geom %>% purrr::pluck(9) %>% as.matrix()
+```
+
+
+Utilizando a função `def_pol` para classificar se o ponto pertence, ou não a um dos estados.
+```{r}
 data_set <- oco2_br %>% 
   mutate(
     flag_to = def_pol(longitude, latitude, pol_to),
@@ -71,6 +83,8 @@ data_set <- oco2_br %>%
 ```
 
 ## Mapeamento
+
+Plot dos pontos do satélite e da região do matopiba.
 
 ```{r}
 matopiba %>% 
@@ -90,8 +104,8 @@ matopiba %>%
 
 # Análise de série espaço-temporal
 
-## Gráfico de concentração de CO2
-```{r}
+## Gráfico de concentração de CO~2~
+```{r,message=FALSE, warning=FALSE, error= FALSE}
 data_set  %>%  
     tidyr::pivot_longer(
     dplyr::starts_with("flag"),
@@ -114,7 +128,7 @@ data_set  %>%
 
 
 ## Gráfico do SIF
-```{r}
+```{r,message=FALSE, warning=FALSE, error= FALSE}
 data_set  %>%  filter(SIF >= 0) %>% 
     tidyr::pivot_longer(
     dplyr::starts_with("flag"),
@@ -135,7 +149,7 @@ data_set  %>%  filter(SIF >= 0) %>%
   ggplot2::theme_bw()
 ```
 ## Tablea de médias de FCO2
-```{r}
+```{r,message=FALSE, warning=FALSE, error= FALSE}
 tab_oco2_sif_media <- data_set  %>%  filter(SIF >= 0) %>% 
     tidyr::pivot_longer(
     dplyr::starts_with("flag"),
@@ -145,9 +159,12 @@ tab_oco2_sif_media <- data_set  %>%  filter(SIF >= 0) %>%
   dplyr::filter(flag)  %>%  
   dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
   dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
-  dplyr::group_by(região, ano, mes) %>%  
+  dplyr::group_by(região, ano, mes, longitude, latitude) %>%  
   dplyr::summarise(media_sif = mean(SIF, na.rm=TRUE),
-                   media_co2 = mean(XCO2, na.rm=TRUE)) %>% 
+                   media_co2 = mean(XCO2, na.rm=TRUE),
+                   #latitude = mean(latitude, na.rm=TRUE),
+                   #longitude = mean(longitude, na.rm=TRUE)
+                   ) %>% 
     dplyr::mutate(
     mes_ano = lubridate::make_date(ano, mes, 1)
   )
@@ -157,3 +174,118 @@ write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif.xlsx")
 ## Faça o download da tabela de médias
 
 [medias_oco2_sif.xlsx](https://github.com/arpanosso/matopiba-xco2-sif/raw/master/data/medias_oco2_sif.xlsx)
+
+
+## Análise geoestatística
+
+### Criando o modelo de variabilidade espacial
+
+Inicialmente, devemos criar o banco de dados com as amostras para a geoestatística espaço-temporal.
+```{r}
+dados_geo <- data_set  %>%  filter(SIF >= 0) %>% 
+    tidyr::pivot_longer(
+    dplyr::starts_with("flag"),
+    names_to = "região",
+    values_to = "flag"
+  ) %>% 
+  dplyr::filter(flag)  %>%  
+  dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
+  dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
+  mutate(
+    mes_ano = lubridate::make_date(ano, mes, 1)
+  ) %>% 
+  select(longitude, latitude, mes_ano, XCO2, SIF)
+dados_geo %>% glimpse()
+```
+
+Vamos filtrar para uma data específica e criar
+
+```{r}
+dados_geo$mes_ano %>% unique()
+df_aux <- dados_geo %>% filter(mes_ano == "2014-09-01") %>% 
+  mutate(x = longitude, y=latitude) %>% 
+  select(x, y, XCO2) %>% 
+  group_by(x,y) %>% 
+  summarise(XCO2 = mean(XCO2))
+coordinates(df_aux)= ~ x+y
+form<-XCO2~1
+```
+
+
+Verificando o Variograma experimental
+```{r}
+vario <- variogram(form, data=df_aux, cutoff=20, width=1.5,cressie=FALSE)
+vario  %>%
+  ggplot(aes(x=dist, y=gamma)) +
+  geom_point()
+m_vario <- fit.variogram(vario,
+                         fit.method = 7,
+                         vgm(1, "Sph", 10, 0))
+```
+
+
+```{r}
+sqr.f1<-round(attr(m_vario, "SSErr"),4); c0<-round(m_vario$psill[[1]],4); c0_c1<-round(sum(m_vario$psill),4);a<-round(m_vario$range[[2]],2)
+r2<-round(r2findWLS(m_vario,vario),8)
+texto_ajuste <- paste("Esf(C0= ",c0,"; C0+C1= ", c0_c1, "; a= ", a,"; SQR = ", sqr.f1,"; R² = ",r2,")",sep="")
+preds = gstat::variogramLine(m_vario, maxdist = max(vario$dist))
+vario %>% 
+  ggplot(aes(dist, gamma)) +
+  geom_point() +
+  geom_line(data = preds) + 
+  theme_bw() +
+  labs(x="Distância de separação", y="Semivariância",
+       title="Dia em qestão",
+       subtitle = texto_ajuste)+
+  coord_cartesian(ylim = c(0,max(vario$gamma)))
+```
+
+Criando o grid de refinamento para a plotagem de pontos em locais não amostrados
+
+
+```{r}
+minX_pol <- min(pol_ma[,1],pol_to[,1],pol_pi[,1],pol_ba[,1])
+maxX_pol <- max(pol_ma[,1],pol_to[,1],pol_pi[,1],pol_ba[,1])
+minY_pol <- min(pol_ma[,2],pol_to[,2],pol_pi[,2],pol_ba[,2])
+maxY_pol <- max(pol_ma[,2],pol_to[,2],pol_pi[,2],pol_ba[,2])
+x<-df_aux$x
+y<-df_aux$y
+dis <- .1 #Distância entre pontos
+grid <- expand.grid(X=seq(min(x,minX_pol),max(x,maxX_pol),dis), Y=seq(min(y,minY_pol),max(y,maxY_pol),dis))
+gridded(grid) = ~ X + Y
+plot(grid)
+points(df_aux,col="red")
+```
+
+### Krigragem ordinária (KO)
+
+Utilizando o algoritmo de KO, vamos estimar xco2/sif nos locais não amostrados.
+
+```{r}
+ko_var<-krige(formula=form, df_aux, grid, model=m_vario, 
+    block=c(0,0),
+    nsim=0,
+    na.action=na.pass,
+    debug.level=-1,  
+    )
+```
+
+Mapa de padrões espaciais.
+
+```{r}
+tibble::as.tibble(ko_var) %>%  
+  dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
+                ) %>% 
+  dplyr::filter(flag) %>% 
+  ggplot(aes(x=X, y=Y),color="black") + 
+  geom_tile(aes(fill = var1.pred)) +
+  scale_fill_gradient(low = "yellow", high = "blue") + 
+  coord_equal()+
+  tema_mapa()+
+  ggplot2::labs(fill="xco2 (ppm)",title = "Dia em questão") +
+  ggspatial::annotation_scale(
+    location="bl",
+    plot_unit="km",
+    height = ggplot2::unit(0.2,"cm"))
+```
+

@@ -8,6 +8,8 @@ library(tidyverse)
 library(geobr)
 library(fco2r)
 library(writexl)
+library(sp)
+library(gstat)
 source("r/graficos.R")
 source("r/funcoes.R")
 ```
@@ -69,8 +71,6 @@ oco2_br %>% glimpse()
 
 ``` r
 estados <- read_state(showProgress = FALSE)
-#> Using year 2010
-#> Loading data for the whole country
 matopiba_filtro <- estados$abbrev_state %in% c("MA","PI","TO","BA")
 matopiba <- estados$geom[matopiba_filtro] 
 matopiba %>% 
@@ -84,11 +84,20 @@ matopiba %>%
 
 ## Dados de xCO2 e SIF
 
+Inicialmente vamos extrair os polígonos com os limites dos estados do
+objegio gerado pelo `{geobr}`.
+
 ``` r
 pol_to <- estados$geom %>% purrr::pluck(7) %>% as.matrix()
 pol_ma <- estados$geom %>% purrr::pluck(8) %>% as.matrix()
 pol_ba <- estados$geom %>% purrr::pluck(16) %>% as.matrix()
 pol_pi <- estados$geom %>% purrr::pluck(9) %>% as.matrix()
+```
+
+Utilizando a função `def_pol` para classificar se o ponto pertence, ou
+não a um dos estados.
+
+``` r
 data_set <- oco2_br %>% 
   mutate(
     flag_to = def_pol(longitude, latitude, pol_to),
@@ -99,6 +108,8 @@ data_set <- oco2_br %>%
 ```
 
 ## Mapeamento
+
+Plot dos pontos do satélite e da região do matopiba.
 
 ``` r
 matopiba %>% 
@@ -116,11 +127,11 @@ matopiba %>%
                       alpha=0.2)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 # Análise de série espaço-temporal
 
-## Gráfico de concentração de CO2
+## Gráfico de concentração de CO<sub>2</sub>
 
 ``` r
 data_set  %>%  
@@ -141,11 +152,9 @@ data_set  %>%
                                color=região)) +
   ggplot2::geom_line() +
   ggplot2::theme_bw()
-#> `summarise()` has grouped output by 'região', 'ano'. You can override using the
-#> `.groups` argument.
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ## Gráfico do SIF
 
@@ -168,11 +177,9 @@ data_set  %>%  filter(SIF >= 0) %>%
                                color=região)) +
   ggplot2::geom_line() +
   ggplot2::theme_bw()
-#> `summarise()` has grouped output by 'região', 'ano'. You can override using the
-#> `.groups` argument.
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- --> \## Tablea de
+![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- --> \## Tablea de
 médias de FCO2
 
 ``` r
@@ -185,17 +192,166 @@ tab_oco2_sif_media <- data_set  %>%  filter(SIF >= 0) %>%
   dplyr::filter(flag)  %>%  
   dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
   dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
-  dplyr::group_by(região, ano, mes) %>%  
+  dplyr::group_by(região, ano, mes, longitude, latitude) %>%  
   dplyr::summarise(media_sif = mean(SIF, na.rm=TRUE),
-                   media_co2 = mean(XCO2, na.rm=TRUE)) %>% 
+                   media_co2 = mean(XCO2, na.rm=TRUE),
+                   #latitude = mean(latitude, na.rm=TRUE),
+                   #longitude = mean(longitude, na.rm=TRUE)
+                   ) %>% 
     dplyr::mutate(
     mes_ano = lubridate::make_date(ano, mes, 1)
   )
-#> `summarise()` has grouped output by 'região', 'ano'. You can override using the
-#> `.groups` argument.
 write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif.xlsx")
 ```
 
 ## Faça o download da tabela de médias
 
 [medias_oco2_sif.xlsx](https://github.com/arpanosso/matopiba-xco2-sif/raw/master/data/medias_oco2_sif.xlsx)
+
+## Análise geoestatística
+
+### Criando o modelo de variabilidade espacial
+
+Inicialmente, devemos criar o banco de dados com as amostras para a
+geoestatística espaço-temporal.
+
+``` r
+dados_geo <- data_set  %>%  filter(SIF >= 0) %>% 
+    tidyr::pivot_longer(
+    dplyr::starts_with("flag"),
+    names_to = "região",
+    values_to = "flag"
+  ) %>% 
+  dplyr::filter(flag)  %>%  
+  dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
+  dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
+  mutate(
+    mes_ano = lubridate::make_date(ano, mes, 1)
+  ) %>% 
+  select(longitude, latitude, mes_ano, XCO2, SIF)
+dados_geo %>% glimpse()
+#> Rows: 7,137
+#> Columns: 5
+#> $ longitude <dbl> -45.5, -45.5, -45.5, -45.5, -45.5, -44.5, -44.5, -44.5, -44.~
+#> $ latitude  <dbl> -7.5, -6.5, -5.5, -4.5, -3.5, -12.5, -11.5, -10.5, -9.5, -8.~
+#> $ mes_ano   <date> 2014-09-01, 2014-09-01, 2014-09-01, 2014-09-01, 2014-09-01,~
+#> $ XCO2      <dbl> 386.7473, 384.4216, 389.8342, 388.0266, 381.5863, 386.5267, ~
+#> $ SIF       <dbl> 0.4928928, 0.2229115, 0.1562369, 0.7605132, 1.1376032, 1.519~
+```
+
+Vamos filtrar para uma data específica e criar
+
+``` r
+dados_geo$mes_ano %>% unique()
+#>  [1] "2014-09-01" "2014-10-01" "2014-11-01" "2014-12-01" "2015-01-01"
+#>  [6] "2015-02-01" "2015-03-01" "2015-04-01" "2015-05-01" "2015-06-01"
+#> [11] "2015-07-01" "2015-08-01" "2015-09-01" "2015-10-01" "2015-11-01"
+#> [16] "2015-12-01" "2016-01-01" "2016-02-01" "2016-03-01" "2016-04-01"
+#> [21] "2016-05-01" "2016-06-01" "2016-07-01" "2016-08-01" "2016-09-01"
+#> [26] "2016-10-01" "2016-11-01" "2016-12-01" "2017-01-01" "2017-02-01"
+#> [31] "2017-03-01" "2017-04-01" "2017-05-01" "2017-06-01" "2017-07-01"
+#> [36] "2017-09-01" "2017-10-01" "2017-11-01" "2017-12-01" "2018-01-01"
+#> [41] "2018-02-01" "2018-03-01" "2018-04-01" "2018-05-01" "2018-06-01"
+#> [46] "2018-07-01" "2018-08-01" "2018-09-01" "2018-10-01" "2018-11-01"
+#> [51] "2018-12-01" "2019-01-01" "2019-02-01" "2019-03-01" "2019-04-01"
+#> [56] "2019-05-01" "2019-06-01" "2019-07-01" "2019-08-01" "2019-09-01"
+#> [61] "2019-10-01" "2019-11-01" "2019-12-01" "2020-01-01"
+df_aux <- dados_geo %>% filter(mes_ano == "2014-09-01") %>% 
+  mutate(x = longitude, y=latitude) %>% 
+  select(x, y, XCO2) %>% 
+  group_by(x,y) %>% 
+  summarise(XCO2 = mean(XCO2))
+coordinates(df_aux)= ~ x+y
+form<-XCO2~1
+```
+
+Verificando o Variograma experimental
+
+``` r
+vario <- variogram(form, data=df_aux, cutoff=20, width=1.5,cressie=FALSE)
+vario  %>%
+  ggplot(aes(x=dist, y=gamma)) +
+  geom_point()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+``` r
+m_vario <- fit.variogram(vario,
+                         fit.method = 7,
+                         vgm(1, "Sph", 10, 0))
+```
+
+``` r
+sqr.f1<-round(attr(m_vario, "SSErr"),4); c0<-round(m_vario$psill[[1]],4); c0_c1<-round(sum(m_vario$psill),4);a<-round(m_vario$range[[2]],2)
+r2<-round(r2findWLS(m_vario,vario),8)
+texto_ajuste <- paste("Esf(C0= ",c0,"; C0+C1= ", c0_c1, "; a= ", a,"; SQR = ", sqr.f1,"; R² = ",r2,")",sep="")
+preds = gstat::variogramLine(m_vario, maxdist = max(vario$dist))
+vario %>% 
+  ggplot(aes(dist, gamma)) +
+  geom_point() +
+  geom_line(data = preds) + 
+  theme_bw() +
+  labs(x="Distância de separação", y="Semivariância",
+       title="Dia em qestão",
+       subtitle = texto_ajuste)+
+  coord_cartesian(ylim = c(0,max(vario$gamma)))
+```
+
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+Criando o grid de refinamento para a plotagem de pontos em locais não
+amostrados
+
+``` r
+minX_pol <- min(pol_ma[,1],pol_to[,1],pol_pi[,1],pol_ba[,1])
+maxX_pol <- max(pol_ma[,1],pol_to[,1],pol_pi[,1],pol_ba[,1])
+minY_pol <- min(pol_ma[,2],pol_to[,2],pol_pi[,2],pol_ba[,2])
+maxY_pol <- max(pol_ma[,2],pol_to[,2],pol_pi[,2],pol_ba[,2])
+x<-df_aux$x
+y<-df_aux$y
+dis <- .1 #Distância entre pontos
+grid <- expand.grid(X=seq(min(x,minX_pol),max(x,maxX_pol),dis), Y=seq(min(y,minY_pol),max(y,maxY_pol),dis))
+gridded(grid) = ~ X + Y
+plot(grid)
+points(df_aux,col="red")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
+### Krigragem ordinária (KO)
+
+Utilizando o algoritmo de KO, vamos estimar xco2/sif nos locais não
+amostrados.
+
+``` r
+ko_var<-krige(formula=form, df_aux, grid, model=m_vario, 
+    block=c(0,0),
+    nsim=0,
+    na.action=na.pass,
+    debug.level=-1,  
+    )
+#> [using ordinary kriging]
+#>  71% done100% done
+```
+
+Mapa de padrões espaciais.
+
+``` r
+tibble::as.tibble(ko_var) %>%  
+  dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
+                ) %>% 
+  dplyr::filter(flag) %>% 
+  ggplot(aes(x=X, y=Y),color="black") + 
+  geom_tile(aes(fill = var1.pred)) +
+  scale_fill_gradient(low = "yellow", high = "blue") + 
+  coord_equal()+
+  tema_mapa()+
+  ggplot2::labs(fill="xco2 (ppm)",title = "Dia em questão") +
+  ggspatial::annotation_scale(
+    location="bl",
+    plot_unit="km",
+    height = ggplot2::unit(0.2,"cm"))
+```
+
+![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
