@@ -4,9 +4,9 @@
 ## Pacotes exigidos
 
 ``` r
+library(ggpubr)
 library(tidyverse)
 library(geobr)
-library(fco2r)
 library(writexl)
 library(sp)
 library(gstat)
@@ -21,7 +21,7 @@ sif_757: 2.6250912\*10^-19
 sif_771: 2.57743\*10^-19
 
 ``` r
-oco2_br <- oco2_br %>% 
+oco2_br <- read_rds("data/oco2_br.rds") %>% 
   mutate(
     sif_757 = fluorescence_radiance_757nm_idp_ph_sec_1_m_2_sr_1_um_1*2.6250912*10^(-19),
     sif_771 = fluorescence_radiance_771nm_idp_ph_sec_1_m_2_sr_1_um_1* 2.57743*10^(-19),
@@ -179,8 +179,10 @@ data_set  %>%  filter(SIF >= 0) %>%
   ggplot2::theme_bw()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- --> \## Tablea de
-médias de FCO2
+![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- --> \# Buscar
+temperatura de superficie land temperatura surface
+
+## Tabela de médias de FCO2
 
 ``` r
 tab_oco2_sif_media <- data_set  %>%  filter(SIF >= 0) %>% 
@@ -194,7 +196,7 @@ tab_oco2_sif_media <- data_set  %>%  filter(SIF >= 0) %>%
   dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
   dplyr::group_by(região, ano, mes, longitude, latitude) %>%  
   dplyr::summarise(media_sif = mean(SIF, na.rm=TRUE),
-                   media_co2 = mean(XCO2, na.rm=TRUE),
+                   media_xco2 = mean(XCO2, na.rm=TRUE),
                    #latitude = mean(latitude, na.rm=TRUE),
                    #longitude = mean(longitude, na.rm=TRUE)
                    ) %>% 
@@ -203,6 +205,26 @@ tab_oco2_sif_media <- data_set  %>%  filter(SIF >= 0) %>%
   )
 write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif.xlsx")
 ```
+
+## Gráficos de dispersão
+
+``` r
+tab_oco2_sif_media %>% 
+  group_by(região, ano, mes) %>%  
+  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% 
+  ggscatter(
+    x = "media_sif", y = "media_xco2",
+    color = "região", palette = "jco",
+    add = "reg.line"
+  ) + coord_cartesian(ylim = c(382.5,392))+
+  facet_wrap(~região) +
+  stat_cor(label.y = 390) + 
+  stat_regline_equation(label.y = 391.2)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ## Faça o download da tabela de médias
 
@@ -239,6 +261,24 @@ dados_geo %>% glimpse()
 #> $ SIF       <dbl> 0.4928928, 0.2229115, 0.1562369, 0.7605132, 1.1376032, 1.519~
 ```
 
+Criando o grid de refinamento para a plotagem de pontos em locais não
+amostrados
+
+``` r
+minX_pol <- min(pol_ma[,1],pol_to[,1],pol_pi[,1],pol_ba[,1])
+maxX_pol <- max(pol_ma[,1],pol_to[,1],pol_pi[,1],pol_ba[,1])
+minY_pol <- min(pol_ma[,2],pol_to[,2],pol_pi[,2],pol_ba[,2])
+maxY_pol <- max(pol_ma[,2],pol_to[,2],pol_pi[,2],pol_ba[,2])
+#x<-df_aux$x
+#y<-df_aux$y
+dis <- .1 #Distância entre pontos
+grid <- expand.grid(X=seq(min(minX_pol),max(maxX_pol),dis), Y=seq(min(minY_pol),max(maxY_pol),dis))
+gridded(grid) = ~ X + Y
+plot(grid)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
 Vamos filtrar para uma data específica e criar
 
 ``` r
@@ -274,7 +314,7 @@ vario  %>%
   geom_point()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 ``` r
 m_vario <- fit.variogram(vario,
@@ -298,26 +338,7 @@ vario %>%
   coord_cartesian(ylim = c(0,max(vario$gamma)))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
-
-Criando o grid de refinamento para a plotagem de pontos em locais não
-amostrados
-
-``` r
-minX_pol <- min(pol_ma[,1],pol_to[,1],pol_pi[,1],pol_ba[,1])
-maxX_pol <- max(pol_ma[,1],pol_to[,1],pol_pi[,1],pol_ba[,1])
-minY_pol <- min(pol_ma[,2],pol_to[,2],pol_pi[,2],pol_ba[,2])
-maxY_pol <- max(pol_ma[,2],pol_to[,2],pol_pi[,2],pol_ba[,2])
-x<-df_aux$x
-y<-df_aux$y
-dis <- .1 #Distância entre pontos
-grid <- expand.grid(X=seq(min(x,minX_pol),max(x,maxX_pol),dis), Y=seq(min(y,minY_pol),max(y,maxY_pol),dis))
-gridded(grid) = ~ X + Y
-plot(grid)
-points(df_aux,col="red")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 ### Krigragem ordinária (KO)
 
@@ -332,7 +353,7 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
     debug.level=-1,  
     )
 #> [using ordinary kriging]
-#>  71% done100% done
+#> 100% done
 ```
 
 Mapa de padrões espaciais.
@@ -354,4 +375,4 @@ tibble::as.tibble(ko_var) %>%
     height = ggplot2::unit(0.2,"cm"))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
