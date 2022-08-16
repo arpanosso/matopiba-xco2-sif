@@ -282,21 +282,9 @@ plot(grid)
 Vamos filtrar para uma data específica e criar
 
 ``` r
-dados_geo$mes_ano %>% unique()
-#>  [1] "2014-09-01" "2014-10-01" "2014-11-01" "2014-12-01" "2015-01-01"
-#>  [6] "2015-02-01" "2015-03-01" "2015-04-01" "2015-05-01" "2015-06-01"
-#> [11] "2015-07-01" "2015-08-01" "2015-09-01" "2015-10-01" "2015-11-01"
-#> [16] "2015-12-01" "2016-01-01" "2016-02-01" "2016-03-01" "2016-04-01"
-#> [21] "2016-05-01" "2016-06-01" "2016-07-01" "2016-08-01" "2016-09-01"
-#> [26] "2016-10-01" "2016-11-01" "2016-12-01" "2017-01-01" "2017-02-01"
-#> [31] "2017-03-01" "2017-04-01" "2017-05-01" "2017-06-01" "2017-07-01"
-#> [36] "2017-09-01" "2017-10-01" "2017-11-01" "2017-12-01" "2018-01-01"
-#> [41] "2018-02-01" "2018-03-01" "2018-04-01" "2018-05-01" "2018-06-01"
-#> [46] "2018-07-01" "2018-08-01" "2018-09-01" "2018-10-01" "2018-11-01"
-#> [51] "2018-12-01" "2019-01-01" "2019-02-01" "2019-03-01" "2019-04-01"
-#> [56] "2019-05-01" "2019-06-01" "2019-07-01" "2019-08-01" "2019-09-01"
-#> [61] "2019-10-01" "2019-11-01" "2019-12-01" "2020-01-01"
-df_aux <- dados_geo %>% filter(mes_ano == "2014-09-01") %>% 
+lista_datas <- dados_geo$mes_ano %>% unique()
+data_especifica <- "2014-09-01"
+df_aux <- dados_geo %>% filter(mes_ano == data_especifica) %>% 
   mutate(x = longitude, y=latitude) %>% 
   select(x, y, XCO2) %>% 
   group_by(x,y) %>% 
@@ -309,14 +297,9 @@ Verificando o Variograma experimental
 
 ``` r
 vario <- variogram(form, data=df_aux, cutoff=20, width=1.5,cressie=FALSE)
-vario  %>%
-  ggplot(aes(x=dist, y=gamma)) +
-  geom_point()
-```
-
-![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
-
-``` r
+# vario  %>%
+#   ggplot(aes(x=dist, y=gamma)) +
+#   geom_point()
 m_vario <- fit.variogram(vario,
                          fit.method = 7,
                          vgm(1, "Sph", 10, 0))
@@ -327,18 +310,17 @@ sqr.f1<-round(attr(m_vario, "SSErr"),4); c0<-round(m_vario$psill[[1]],4); c0_c1<
 r2<-round(r2findWLS(m_vario,vario),8)
 texto_ajuste <- paste("Esf(C0= ",c0,"; C0+C1= ", c0_c1, "; a= ", a,"; SQR = ", sqr.f1,"; R² = ",r2,")",sep="")
 preds = gstat::variogramLine(m_vario, maxdist = max(vario$dist))
-vario %>% 
+semivar <- vario %>% 
   ggplot(aes(dist, gamma)) +
   geom_point() +
   geom_line(data = preds) + 
   theme_bw() +
   labs(x="Distância de separação", y="Semivariância",
-       title="Dia em qestão",
+       title=data_especifica,
        subtitle = texto_ajuste)+
   coord_cartesian(ylim = c(0,max(vario$gamma)))
+ggsave(paste0("img/variograma/",data_especifica,"_modelo.png"),semivar)
 ```
-
-![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 ### Krigragem ordinária (KO)
 
@@ -353,13 +335,13 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
     debug.level=-1,  
     )
 #> [using ordinary kriging]
-#> 100% done
+#>  48% done100% done
 ```
 
 Mapa de padrões espaciais.
 
 ``` r
-tibble::as.tibble(ko_var) %>%  
+krigagem <- tibble::as.tibble(ko_var) %>%  
   dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
                 ) %>% 
   dplyr::filter(flag) %>% 
@@ -368,11 +350,209 @@ tibble::as.tibble(ko_var) %>%
   scale_fill_gradient(low = "yellow", high = "blue") + 
   coord_equal()+
   tema_mapa()+
-  ggplot2::labs(fill="xco2 (ppm)",title = "Dia em questão") +
+  ggplot2::labs(fill="xco2 (ppm)",title = data_especifica) +
   ggspatial::annotation_scale(
     location="bl",
     plot_unit="km",
     height = ggplot2::unit(0.2,"cm"))
+ggsave(paste0("img/krig/",data_especifica,"_modelo.png"),krigagem)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+## Vamos criar uma expade para testar todos os modelos
+
+``` r
+expand.grid(dia = lista_datas, modelo = c("Sph","Exp","Gau"))
+#>            dia modelo
+#> 1   2014-09-01    Sph
+#> 2   2014-10-01    Sph
+#> 3   2014-11-01    Sph
+#> 4   2014-12-01    Sph
+#> 5   2015-01-01    Sph
+#> 6   2015-02-01    Sph
+#> 7   2015-03-01    Sph
+#> 8   2015-04-01    Sph
+#> 9   2015-05-01    Sph
+#> 10  2015-06-01    Sph
+#> 11  2015-07-01    Sph
+#> 12  2015-08-01    Sph
+#> 13  2015-09-01    Sph
+#> 14  2015-10-01    Sph
+#> 15  2015-11-01    Sph
+#> 16  2015-12-01    Sph
+#> 17  2016-01-01    Sph
+#> 18  2016-02-01    Sph
+#> 19  2016-03-01    Sph
+#> 20  2016-04-01    Sph
+#> 21  2016-05-01    Sph
+#> 22  2016-06-01    Sph
+#> 23  2016-07-01    Sph
+#> 24  2016-08-01    Sph
+#> 25  2016-09-01    Sph
+#> 26  2016-10-01    Sph
+#> 27  2016-11-01    Sph
+#> 28  2016-12-01    Sph
+#> 29  2017-01-01    Sph
+#> 30  2017-02-01    Sph
+#> 31  2017-03-01    Sph
+#> 32  2017-04-01    Sph
+#> 33  2017-05-01    Sph
+#> 34  2017-06-01    Sph
+#> 35  2017-07-01    Sph
+#> 36  2017-09-01    Sph
+#> 37  2017-10-01    Sph
+#> 38  2017-11-01    Sph
+#> 39  2017-12-01    Sph
+#> 40  2018-01-01    Sph
+#> 41  2018-02-01    Sph
+#> 42  2018-03-01    Sph
+#> 43  2018-04-01    Sph
+#> 44  2018-05-01    Sph
+#> 45  2018-06-01    Sph
+#> 46  2018-07-01    Sph
+#> 47  2018-08-01    Sph
+#> 48  2018-09-01    Sph
+#> 49  2018-10-01    Sph
+#> 50  2018-11-01    Sph
+#> 51  2018-12-01    Sph
+#> 52  2019-01-01    Sph
+#> 53  2019-02-01    Sph
+#> 54  2019-03-01    Sph
+#> 55  2019-04-01    Sph
+#> 56  2019-05-01    Sph
+#> 57  2019-06-01    Sph
+#> 58  2019-07-01    Sph
+#> 59  2019-08-01    Sph
+#> 60  2019-09-01    Sph
+#> 61  2019-10-01    Sph
+#> 62  2019-11-01    Sph
+#> 63  2019-12-01    Sph
+#> 64  2020-01-01    Sph
+#> 65  2014-09-01    Exp
+#> 66  2014-10-01    Exp
+#> 67  2014-11-01    Exp
+#> 68  2014-12-01    Exp
+#> 69  2015-01-01    Exp
+#> 70  2015-02-01    Exp
+#> 71  2015-03-01    Exp
+#> 72  2015-04-01    Exp
+#> 73  2015-05-01    Exp
+#> 74  2015-06-01    Exp
+#> 75  2015-07-01    Exp
+#> 76  2015-08-01    Exp
+#> 77  2015-09-01    Exp
+#> 78  2015-10-01    Exp
+#> 79  2015-11-01    Exp
+#> 80  2015-12-01    Exp
+#> 81  2016-01-01    Exp
+#> 82  2016-02-01    Exp
+#> 83  2016-03-01    Exp
+#> 84  2016-04-01    Exp
+#> 85  2016-05-01    Exp
+#> 86  2016-06-01    Exp
+#> 87  2016-07-01    Exp
+#> 88  2016-08-01    Exp
+#> 89  2016-09-01    Exp
+#> 90  2016-10-01    Exp
+#> 91  2016-11-01    Exp
+#> 92  2016-12-01    Exp
+#> 93  2017-01-01    Exp
+#> 94  2017-02-01    Exp
+#> 95  2017-03-01    Exp
+#> 96  2017-04-01    Exp
+#> 97  2017-05-01    Exp
+#> 98  2017-06-01    Exp
+#> 99  2017-07-01    Exp
+#> 100 2017-09-01    Exp
+#> 101 2017-10-01    Exp
+#> 102 2017-11-01    Exp
+#> 103 2017-12-01    Exp
+#> 104 2018-01-01    Exp
+#> 105 2018-02-01    Exp
+#> 106 2018-03-01    Exp
+#> 107 2018-04-01    Exp
+#> 108 2018-05-01    Exp
+#> 109 2018-06-01    Exp
+#> 110 2018-07-01    Exp
+#> 111 2018-08-01    Exp
+#> 112 2018-09-01    Exp
+#> 113 2018-10-01    Exp
+#> 114 2018-11-01    Exp
+#> 115 2018-12-01    Exp
+#> 116 2019-01-01    Exp
+#> 117 2019-02-01    Exp
+#> 118 2019-03-01    Exp
+#> 119 2019-04-01    Exp
+#> 120 2019-05-01    Exp
+#> 121 2019-06-01    Exp
+#> 122 2019-07-01    Exp
+#> 123 2019-08-01    Exp
+#> 124 2019-09-01    Exp
+#> 125 2019-10-01    Exp
+#> 126 2019-11-01    Exp
+#> 127 2019-12-01    Exp
+#> 128 2020-01-01    Exp
+#> 129 2014-09-01    Gau
+#> 130 2014-10-01    Gau
+#> 131 2014-11-01    Gau
+#> 132 2014-12-01    Gau
+#> 133 2015-01-01    Gau
+#> 134 2015-02-01    Gau
+#> 135 2015-03-01    Gau
+#> 136 2015-04-01    Gau
+#> 137 2015-05-01    Gau
+#> 138 2015-06-01    Gau
+#> 139 2015-07-01    Gau
+#> 140 2015-08-01    Gau
+#> 141 2015-09-01    Gau
+#> 142 2015-10-01    Gau
+#> 143 2015-11-01    Gau
+#> 144 2015-12-01    Gau
+#> 145 2016-01-01    Gau
+#> 146 2016-02-01    Gau
+#> 147 2016-03-01    Gau
+#> 148 2016-04-01    Gau
+#> 149 2016-05-01    Gau
+#> 150 2016-06-01    Gau
+#> 151 2016-07-01    Gau
+#> 152 2016-08-01    Gau
+#> 153 2016-09-01    Gau
+#> 154 2016-10-01    Gau
+#> 155 2016-11-01    Gau
+#> 156 2016-12-01    Gau
+#> 157 2017-01-01    Gau
+#> 158 2017-02-01    Gau
+#> 159 2017-03-01    Gau
+#> 160 2017-04-01    Gau
+#> 161 2017-05-01    Gau
+#> 162 2017-06-01    Gau
+#> 163 2017-07-01    Gau
+#> 164 2017-09-01    Gau
+#> 165 2017-10-01    Gau
+#> 166 2017-11-01    Gau
+#> 167 2017-12-01    Gau
+#> 168 2018-01-01    Gau
+#> 169 2018-02-01    Gau
+#> 170 2018-03-01    Gau
+#> 171 2018-04-01    Gau
+#> 172 2018-05-01    Gau
+#> 173 2018-06-01    Gau
+#> 174 2018-07-01    Gau
+#> 175 2018-08-01    Gau
+#> 176 2018-09-01    Gau
+#> 177 2018-10-01    Gau
+#> 178 2018-11-01    Gau
+#> 179 2018-12-01    Gau
+#> 180 2019-01-01    Gau
+#> 181 2019-02-01    Gau
+#> 182 2019-03-01    Gau
+#> 183 2019-04-01    Gau
+#> 184 2019-05-01    Gau
+#> 185 2019-06-01    Gau
+#> 186 2019-07-01    Gau
+#> 187 2019-08-01    Gau
+#> 188 2019-09-01    Gau
+#> 189 2019-10-01    Gau
+#> 190 2019-11-01    Gau
+#> 191 2019-12-01    Gau
+#> 192 2020-01-01    Gau
+```

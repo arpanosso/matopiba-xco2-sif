@@ -242,8 +242,9 @@ plot(grid)
 Vamos filtrar para uma data específica e criar
 
 ```{r}
-dados_geo$mes_ano %>% unique()
-df_aux <- dados_geo %>% filter(mes_ano == "2014-09-01") %>% 
+lista_datas <- dados_geo$mes_ano %>% unique()
+data_especifica <- "2014-09-01"
+df_aux <- dados_geo %>% filter(mes_ano == data_especifica) %>% 
   mutate(x = longitude, y=latitude) %>% 
   select(x, y, XCO2) %>% 
   group_by(x,y) %>% 
@@ -257,9 +258,9 @@ form<-XCO2~1
 Verificando o Variograma experimental
 ```{r}
 vario <- variogram(form, data=df_aux, cutoff=20, width=1.5,cressie=FALSE)
-vario  %>%
-  ggplot(aes(x=dist, y=gamma)) +
-  geom_point()
+# vario  %>%
+#   ggplot(aes(x=dist, y=gamma)) +
+#   geom_point()
 m_vario <- fit.variogram(vario,
                          fit.method = 7,
                          vgm(1, "Sph", 10, 0))
@@ -271,18 +272,17 @@ sqr.f1<-round(attr(m_vario, "SSErr"),4); c0<-round(m_vario$psill[[1]],4); c0_c1<
 r2<-round(r2findWLS(m_vario,vario),8)
 texto_ajuste <- paste("Esf(C0= ",c0,"; C0+C1= ", c0_c1, "; a= ", a,"; SQR = ", sqr.f1,"; R² = ",r2,")",sep="")
 preds = gstat::variogramLine(m_vario, maxdist = max(vario$dist))
-vario %>% 
+semivar <- vario %>% 
   ggplot(aes(dist, gamma)) +
   geom_point() +
   geom_line(data = preds) + 
   theme_bw() +
   labs(x="Distância de separação", y="Semivariância",
-       title="Dia em qestão",
+       title=data_especifica,
        subtitle = texto_ajuste)+
   coord_cartesian(ylim = c(0,max(vario$gamma)))
+ggsave(paste0("img/variograma/",data_especifica,"_modelo.png"),semivar)
 ```
-
-
 
 ### Krigragem ordinária (KO)
 
@@ -300,7 +300,7 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
 Mapa de padrões espaciais.
 
 ```{r}
-tibble::as.tibble(ko_var) %>%  
+krigagem <- tibble::as.tibble(ko_var) %>%  
   dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
                 ) %>% 
   dplyr::filter(flag) %>% 
@@ -309,10 +309,17 @@ tibble::as.tibble(ko_var) %>%
   scale_fill_gradient(low = "yellow", high = "blue") + 
   coord_equal()+
   tema_mapa()+
-  ggplot2::labs(fill="xco2 (ppm)",title = "Dia em questão") +
+  ggplot2::labs(fill="xco2 (ppm)",title = data_especifica) +
   ggspatial::annotation_scale(
     location="bl",
     plot_unit="km",
     height = ggplot2::unit(0.2,"cm"))
+ggsave(paste0("img/krig/",data_especifica,"_modelo.png"),krigagem)
+```
+
+## Vamos criar uma expade para testar todos os modelos
+
+```{r}
+expand.grid(dia = lista_datas, modelo = c("Sph","Exp","Gau"))
 ```
 
