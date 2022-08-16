@@ -317,9 +317,17 @@ krigagem <- tibble::as.tibble(ko_var) %>%
 ggsave(paste0("img/krig/",data_especifica,"_modelo.png"),krigagem)
 ```
 
-## Vamos criar uma expade para testar todos os modelos
+## Vamos criar um grid para testar todos os modelos
 
 ```{r}
-expand.grid(dia = lista_datas, modelo = c("Sph","Exp","Gau"))
+expand.grid(dia = lista_datas, 
+            modelo = c("Sph","Exp","Gau"),
+            formula = c("XCO2~1","SIF~1"))
+```
+
+## função para análise geoestatística
+
+```{r}
+# my_geo_stat <- function()
 ```
 
