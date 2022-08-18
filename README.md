@@ -336,7 +336,7 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
     debug.level=-1,  
     )
 #> [using ordinary kriging]
-#>  65% done100% done
+#>  52% done100% done
 ```
 
 Mapa de padrões espaciais.
@@ -416,6 +416,15 @@ matopiba %>%
 ## Juntando as duas bases de dados
 
 ``` r
+tab_oco2_sif_uso <- tab_oco2_sif_media %>%
+  group_by(longitude, latitude, ano) %>% 
+  summarise(
+    media_sif = mean(media_sif),
+    media_xco2 = mean(media_xco2)
+  ) %>% 
+  left_join(uso_solo_uni,c("longitude","latitude","ano")) %>% 
+  drop_na()
+
 tab_oco2_sif_media <- tab_oco2_sif_media %>%
   left_join(uso_solo_uni,c("longitude","latitude","ano")) %>% 
   drop_na()
@@ -468,7 +477,7 @@ tab_oco2_sif_media %>%
 
 ![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
-### Para periodo úmido
+### Para período úmido
 
 ``` r
 tab_oco2_sif_media %>% 
@@ -482,11 +491,66 @@ tab_oco2_sif_media %>%
     x = "media_sif", y = "media_xco2",
     color = "value", palette = "jco",
     add = "reg.line"
-  ) + coord_cartesian(ylim = c(382.5,392))+
+  ) + coord_cartesian(ylim = c(382.5,392)) +
   facet_wrap(~value) +
   stat_cor(label.y = 390) + 
-  stat_regline_equation(label.y = 391.2)+
+  stat_regline_equation(label.y = 391.2) +
   labs(color = "Wet: value")
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+
+## Motivação, quais pontos apresentaram alteração do uso do solo?
+
+``` r
+tab_oco2_sif_uso <- tab_oco2_sif_uso %>% ungroup()
+tab_oco2_sif_uso %>% 
+  group_by(longitude, latitude, value) %>% 
+  summarise(
+   n = n()
+  ) %>% 
+  filter(n<5) %>% 
+  ggplot(aes(x=longitude, y=latitude)) +
+  geom_point()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+
+Mapear os dados acima
+
+``` r
+matopiba %>% 
+  ggplot() +
+  geom_sf(fill="white", color="black",
+          size=.15, show.legend = FALSE)+
+  tema_mapa() +
+  geom_point(data=tab_oco2_sif_uso %>% 
+               group_by(longitude, latitude, value) %>% 
+               summarise(
+                 n = n()
+               ) %>% 
+               filter(n<5),
+             aes(x=longitude,y=latitude),color="red")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+
+Ideal é identificar no banco de dados quais são esses pontos, por meio
+da latitude e longitude
+
+``` r
+mudanca <- tab_oco2_sif_uso %>% 
+  group_by(longitude, latitude, value) %>% 
+  summarise(
+   n = n()
+  ) %>% 
+  filter(n<5) %>% 
+  count()
+tab_oco2_sif_media <- tab_oco2_sif_media %>% 
+  mutate(
+    mudança = 
+      longitude %in% mudanca$longitude &
+      latitude %in% mudanca$latitude
+  )
+write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
+```
