@@ -336,7 +336,7 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
     debug.level=-1,  
     )
 #> [using ordinary kriging]
-#>  71% done100% done
+#>  65% done100% done
 ```
 
 Mapa de padrões espaciais.
@@ -426,3 +426,67 @@ write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
 ## Faça o download da tabela de médias e usos do solo de 2015 a 2019
 
 [medias_oco2_sif.xlsx](https://github.com/arpanosso/matopiba-xco2-sif/raw/master/data/medias_oco2_sif_uso.xlsx)
+
+``` r
+tab_oco2_sif_media %>% 
+  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
+  group_by(season, value, ano, mes) %>%  
+  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% 
+  ggscatter(
+    x = "media_sif", y = "media_xco2",
+    color = "value", palette = "jco",
+    add = "reg.line"
+  ) + coord_cartesian(ylim = c(382.5,392))+
+  facet_wrap(~value) +
+  stat_cor(label.y = 390) + 
+  stat_regline_equation(label.y = 391.2)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- --> \### Para
+periodo de seca
+
+``` r
+tab_oco2_sif_media %>% 
+  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
+  group_by(season, value, ano, mes) %>%  
+  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% 
+  filter(season == "dry") %>% 
+  ggscatter(
+    x = "media_sif", y = "media_xco2",
+    color = "value", palette = "jco",
+    add = "reg.line"
+  ) + coord_cartesian(ylim = c(382.5,392))+
+  facet_wrap(~value) +
+  stat_cor(label.y = 390) + 
+  stat_regline_equation(label.y = 391.2)+
+  labs(color = "Dry: value")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+
+### Para periodo úmido
+
+``` r
+tab_oco2_sif_media %>% 
+  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
+  group_by(season, value, ano, mes) %>%  
+  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% 
+  filter(season == "wet") %>% 
+  ggscatter(
+    x = "media_sif", y = "media_xco2",
+    color = "value", palette = "jco",
+    add = "reg.line"
+  ) + coord_cartesian(ylim = c(382.5,392))+
+  facet_wrap(~value) +
+  stat_cor(label.y = 390) + 
+  stat_regline_equation(label.y = 391.2)+
+  labs(color = "Wet: value")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
