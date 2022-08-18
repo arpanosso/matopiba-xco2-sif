@@ -1,0 +1,116 @@
+ID,lon,lat,LU_15,LU_16,LU_17,LU_18,LU_19
+1,-50.5,-12.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+2,-50.5,-11.5,Forest,Forest,Forest,Forest,Forest
+3,-50.5,-10.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+4,-49.5,-12.5,Forest,Forest,Forest,Forest,Forest
+5,-49.5,-11.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+6,-49.5,-10.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+7,-49.5,-9.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+8,-48.5,-12.5,Forest,Forest,Forest,Forest,Forest
+9,-48.5,-11.5,Forest,Forest,Forest,Forest,Forest
+10,-48.5,-10.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+11,-48.5,-9.5,Forest,Forest,Forest,Forest,Forest
+12,-48.5,-8.5,Forest,Forest,Forest,Forest,Forest
+13,-48.5,-7.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+14,-48.5,-6.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+15,-47.5,-12.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+16,-47.5,-11.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+17,-47.5,-10.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+18,-47.5,-9.5,Forest,Shrubs,Forest,Shrubs,Shrubs
+19,-47.5,-8.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+20,-47.5,-7.5,Forest,Forest,Forest,Forest,Forest
+21,-47.5,-6.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+22,-47.5,-5.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+23,-47.5,-4.5,Forest,Herbaceus Veg.,Forest,Herbaceus Veg.,Herbaceus Veg.
+24,-46.5,-12.5,Agriculture,Forest,Agriculture,Forest,Forest
+25,-46.5,-11.5,Agriculture,Agriculture,Agriculture,Agriculture,Agriculture
+26,-46.5,-10.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+27,-46.5,-9.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+28,-46.5,-8.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+29,-46.5,-7.5,Forest,Forest,Forest,Forest,Forest
+30,-46.5,-6.5,Forest,Forest,Forest,Forest,Forest
+31,-46.5,-5.5,Forest,Forest,Forest,Forest,Forest
+32,-46.5,-4.5,Forest,Forest,Forest,Forest,Forest
+33,-46.5,-3.5,Forest,Forest,Forest,Forest,Forest
+34,-45.5,-14.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+35,-45.5,-13.5,Herbaceus Veg.,Forest,Herbaceus Veg.,Forest,Forest
+36,-45.5,-12.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+37,-45.5,-11.5,Agriculture,Agriculture,Agriculture,Agriculture,Agriculture
+38,-45.5,-10.5,Agriculture,Agriculture,Agriculture,Agriculture,Agriculture
+39,-45.5,-9.5,Shrubs,Herbaceus Veg.,Shrubs,Herbaceus Veg.,Herbaceus Veg.
+40,-45.5,-8.5,Forest,Forest,Forest,Forest,Forest
+41,-45.5,-7.5,Agriculture,Shrubs,Agriculture,Shrubs,Shrubs
+42,-45.5,-6.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+43,-45.5,-5.5,Agriculture,Agriculture,Agriculture,Agriculture,Agriculture
+44,-45.5,-4.5,Forest,Forest,Forest,Forest,Forest
+45,-45.5,-3.5,Forest,Forest,Forest,Forest,Forest
+46,-45.5,-2.5,Forest,Forest,Forest,Forest,Forest
+47,-45.5,-1.5,Water Bodies,Water Bodies,Water Bodies,Water Bodies,Water Bodies
+48,-44.5,-13.5,Forest,Forest,Forest,Forest,Forest
+49,-44.5,-12.5,Forest,Forest,Forest,Forest,Forest
+50,-44.5,-11.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+51,-44.5,-10.5,Herbaceus Veg.,Forest,Herbaceus Veg.,Forest,Forest
+52,-44.5,-9.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+53,-44.5,-8.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+54,-44.5,-7.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+55,-44.5,-6.5,Forest,Forest,Forest,Forest,Forest
+56,-44.5,-5.5,Agriculture,Herbaceus Veg.,Agriculture,Herbaceus Veg.,Herbaceus Veg.
+57,-44.5,-4.5,Forest,Forest,Forest,Forest,Forest
+58,-44.5,-3.5,Forest,Forest,Forest,Forest,Forest
+59,-44.5,-2.5,Forest,Forest,Forest,Forest,Forest
+60,-43.5,-14.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+61,-43.5,-13.5,Forest,Forest,Forest,Forest,Forest
+62,-43.5,-12.5,Forest,Forest,Forest,Forest,Forest
+63,-43.5,-11.5,Forest,Forest,Forest,Forest,Forest
+64,-43.5,-10.5,Forest,Forest,Forest,Forest,Forest
+65,-43.5,-9.5,Forest,Forest,Forest,Forest,Forest
+66,-43.5,-8.5,Forest,Forest,Forest,Forest,Forest
+67,-43.5,-7.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+68,-43.5,-6.5,Forest,Forest,Forest,Forest,Forest
+69,-43.5,-5.5,Forest,Forest,Forest,Forest,Forest
+70,-43.5,-4.5,Forest,Forest,Forest,Forest,Forest
+71,-43.5,-2.5,Herbaceus Wet.,Herbaceus Wet.,Herbaceus Wet.,Herbaceus Wet.,Herbaceus Wet.
+72,-42.5,-14.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+73,-42.5,-13.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+74,-42.5,-12.5,Forest,Forest,Forest,Forest,Forest
+75,-42.5,-11.5,Forest,Forest,Forest,Forest,Forest
+76,-42.5,-10.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+77,-42.5,-9.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+78,-42.5,-8.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+79,-42.5,-7.5,Forest,Forest,Forest,Forest,Forest
+80,-42.5,-6.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+81,-42.5,-5.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+82,-42.5,-4.5,Forest,Forest,Forest,Forest,Forest
+83,-42.5,-3.5,Shrubs,Herbaceus Veg.,Shrubs,Herbaceus Veg.,Herbaceus Veg.
+84,-41.5,-14.5,Shrubs,Herbaceus Veg.,Shrubs,Herbaceus Veg.,Herbaceus Veg.
+85,-41.5,-13.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+86,-41.5,-12.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+87,-41.5,-11.5,Forest,Shrubs,Forest,Shrubs,Shrubs
+88,-41.5,-10.5,Forest,Forest,Forest,Forest,Forest
+89,-41.5,-9.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+90,-41.5,-8.5,Agriculture,Herbaceus Veg.,Agriculture,Herbaceus Veg.,Herbaceus Veg.
+91,-41.5,-7.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+92,-41.5,-6.5,Forest,Shrubs,Forest,Shrubs,Shrubs
+93,-41.5,-5.5,Forest,Forest,Forest,Forest,Forest
+94,-41.5,-4.5,Forest,Forest,Forest,Forest,Forest
+95,-41.5,-3.5,Forest,Forest,Forest,Forest,Forest
+96,-40.5,-15.5,Forest,Forest,Forest,Forest,Forest
+97,-40.5,-14.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+98,-40.5,-13.5,Herbaceus Veg.,Shrubs,Herbaceus Veg.,Shrubs,Shrubs
+99,-40.5,-12.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+100,-40.5,-11.5,Forest,Forest,Forest,Forest,Forest
+101,-40.5,-10.5,Shrubs,Forest,Shrubs,Forest,Forest
+102,-40.5,-9.5,Herbaceus Veg.,Shrubs,Herbaceus Veg.,Shrubs,Shrubs
+103,-39.5,-17.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+104,-39.5,-16.5,Herbaceus Veg.,Forest,Herbaceus Veg.,Forest,Forest
+105,-39.5,-15.5,Forest,Forest,Forest,Forest,Forest
+106,-39.5,-14.5,Forest,Forest,Forest,Forest,Forest
+107,-39.5,-13.5,Forest,Forest,Forest,Forest,Forest
+108,-39.5,-12.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+109,-39.5,-11.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+110,-39.5,-10.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+111,-39.5,-9.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+112,-38.5,-12.5,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.,Herbaceus Veg.
+113,-38.5,-11.5,Shrubs,Shrubs,Shrubs,Shrubs,Shrubs
+114,-38.5,-10.5,Shrubs,Herbaceus Veg.,Shrubs,Herbaceus Veg.,Herbaceus Veg.
+115,-38.5,-9.5,Forest,Forest,Forest,Forest,Forest

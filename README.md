@@ -21,6 +21,7 @@ sif_757: 2.6250912\*10^-19
 sif_771: 2.57743\*10^-19
 
 ``` r
+uso_solo <- read_rds("data/land_use.rds")
 oco2_br <- read_rds("data/oco2_br.rds") %>% 
   mutate(
     sif_757 = fluorescence_radiance_757nm_idp_ph_sec_1_m_2_sr_1_um_1*2.6250912*10^(-19),
@@ -335,7 +336,7 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
     debug.level=-1,  
     )
 #> [using ordinary kriging]
-#>  85% done100% done
+#>  71% done100% done
 ```
 
 Mapa de padrões espaciais.
@@ -366,81 +367,9 @@ mypar<-expand.grid(dia_ = lista_datas,
             variavel_ = c("XCO2","SIF"))
 ```
 
-## função para análise geoestatística
+## Usando a `my_geo_stat` função para análise geoestatística
 
 ``` r
-my_geo_stat <- function(df = dados_geo,
-                        modelo = "Sph",
-                        dia = "2014-09-01",
-                        variavel="XCO2"){
-  
-  # Preparo do banco de dados
-  data_especifica <- dia 
-  df_aux <- df %>% filter(mes_ano == data_especifica) %>% 
-    mutate(x = longitude, y=latitude) %>% 
-    select("x", "y", variavel)
-  names(df_aux) <- c("x","y","z")  
-  df_aux <- df_aux %>% 
-    group_by(x,y) %>% 
-    summarise(z = mean(z))
-  coordinates(df_aux)= ~ x+y
-  form<-z~1
-  
-  # Criando o variograma experimental
-  vario <- variogram(form, data=df_aux, cutoff=20, width=1.5,cressie=FALSE)
-  vario_exp <- vario  %>%
-    ggplot(aes(x=dist, y=gamma)) +
-    geom_point()+
-    labs(title = paste0(variavel,"-",dia) )+
-    theme_bw()
-  ggsave(paste0("img/variograma_experimental/",variavel,"_",dia,".png"),vario_exp)
-  
-  # modelando o semivariograma
-  m_vario <- fit.variogram(vario,fit.method = 7,
-                           vgm(1, modelo, 10, 0)
-  )
-  sqr.f1<-round(attr(m_vario, "SSErr"),4)
-  c0<-round(m_vario$psill[[1]],4)
-  c0_c1<-round(sum(m_vario$psill),4)
-  a<-round(m_vario$range[[2]],2)
-  r2<-round(r2findWLS(m_vario,vario),8)
-  texto_ajuste <- paste(modelo,"(C0= ",c0,"; C0+C1= ", c0_c1, "; a= ", a,"; SQR = ", sqr.f1,"; R² = ",r2,")",sep="")
-  preds = gstat::variogramLine(m_vario, maxdist = max(vario$dist))
-  semivar <- vario %>% 
-    ggplot(aes(dist, gamma)) +
-    geom_point() +
-    geom_line(data = preds) + 
-    theme_bw() +
-    labs(x="Distância de separação", y="Semivariância",
-         title=paste0(variavel,"-",dia),
-         subtitle = texto_ajuste)+
-    coord_cartesian(ylim = c(0,max(vario$gamma)))
-  ggsave(paste0("img/variograma/",variavel,"_",dia,"_",modelo,".png"),semivar)
-  
-  # Krigagem ordinária
-  ko_var<-krige(formula=form, df_aux, grid, model=m_vario, 
-    block=c(0,0),
-    nsim=0,
-    na.action=na.pass,
-    debug.level=-1,  
-    )
-  krigagem <- tibble::as.tibble(ko_var) %>%  
-    dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
-    ) %>% 
-    dplyr::filter(flag) %>% 
-    ggplot(aes(x=X, y=Y),color="black") + 
-    geom_tile(aes(fill = var1.pred)) +
-    scale_fill_gradient(low = "yellow", high = "blue") + 
-    coord_equal()+
-    tema_mapa()+
-    ggplot2::labs(fill=variavel,title = data_especifica) +
-    ggspatial::annotation_scale(
-      location="bl",
-      plot_unit="km",
-      height = ggplot2::unit(0.2,"cm"))
-  ggsave(paste0("img/krig/",variavel,"_",dia,"_",modelo,".png"),krigagem)
-}
-
 # my_geo_stat(df = dados_geo,
 #                         modelo = "Sph",
 #                         dia = "2014-09-01",
@@ -454,3 +383,46 @@ my_geo_stat <- function(df = dados_geo,
 #               )
 # }
 ```
+
+## Juntando os diferentes usos do solo para a região
+
+``` r
+uso_solo_uni <-uso_solo %>% 
+  pivot_longer(LU_15:LU_19,names_to = "ano") %>% 
+  arrange(ano) %>% 
+  mutate(ano = as.numeric(str_remove(ano,"LU_"))+2000) %>% 
+  rename(longitude = lon,latitude = lat)
+uso_solo_uni %>% 
+  ggplot(aes(longitude, latitude, color=value)) +
+  geom_point() +
+  facet_wrap(~ano)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+
+``` r
+matopiba %>% 
+  ggplot() +
+  geom_sf(fill="white", color="black",
+                   size=.15, show.legend = FALSE)+
+  tema_mapa() +
+  geom_point(data=uso_solo_uni,
+                      ggplot2::aes(x=longitude,y=latitude,color=value)) +
+  facet_wrap(~ano)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+## Juntando as duas bases de dados
+
+``` r
+tab_oco2_sif_media <- tab_oco2_sif_media %>%
+  left_join(uso_solo_uni,c("longitude","latitude","ano")) %>% 
+  drop_na()
+
+write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
+```
+
+## Faça o download da tabela de médias e usos do solo de 2015 a 2019
+
+[medias_oco2_sif.xlsx](https://github.com/arpanosso/matopiba-xco2-sif/raw/master/data/medias_oco2_sif_uso.xlsx)
