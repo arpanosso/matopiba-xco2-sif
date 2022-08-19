@@ -336,7 +336,7 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
     debug.level=-1,  
     )
 #> [using ordinary kriging]
-#>  52% done100% done
+#>  26% done 79% done100% done
 ```
 
 Mapa de padrões espaciais.
@@ -552,5 +552,22 @@ tab_oco2_sif_media <- tab_oco2_sif_media %>%
       longitude %in% mudanca$longitude &
       latitude %in% mudanca$latitude
   )
-write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
+#write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
+
+tab_oco2_sif_media  %>% ungroup() %>%
+  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
+  group_by(mudança, season, ano, mes) %>%  
+  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% 
+  ggscatter(
+    x = "media_sif", y = "media_xco2",
+    color = "mudança", palette = "jco",
+    add = "reg.line"
+  ) + coord_cartesian(ylim = c(382.5,392))+
+  facet_wrap(~mudança + season) +
+  stat_cor(label.y = 390) + 
+  stat_regline_equation(label.y = 391.2)
 ```
+
+![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
