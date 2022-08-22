@@ -21,7 +21,8 @@ sif_757: 2.6250912\*10^-19
 sif_771: 2.57743\*10^-19
 
 ``` r
-uso_solo <- read_rds("data/land_use.rds")
+lst_dn<- read_rds("data/lst_dn.rds")
+uso_solo <- read_rds("data/land_use2.rds")
 oco2_br <- read_rds("data/oco2_br.rds") %>% 
   mutate(
     sif_757 = fluorescence_radiance_757nm_idp_ph_sec_1_m_2_sr_1_um_1*2.6250912*10^(-19),
@@ -180,8 +181,8 @@ data_set  %>%  filter(SIF >= 0) %>%
   ggplot2::theme_bw()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- --> \# Buscar
-temperatura de superficie land temperatura surface
+![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- --> \## Gráfico
+do Temperatura da Superfício do Solo
 
 ## Tabela de médias de FCO2
 
@@ -336,7 +337,7 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
     debug.level=-1,  
     )
 #> [using ordinary kriging]
-#>  26% done 79% done100% done
+#> 100% done
 ```
 
 Mapa de padrões espaciais.
@@ -428,6 +429,13 @@ tab_oco2_sif_uso <- tab_oco2_sif_media %>%
 tab_oco2_sif_media <- tab_oco2_sif_media %>%
   left_join(uso_solo_uni,c("longitude","latitude","ano")) %>% 
   drop_na()
+
+
+names(lst_dn) <- c("longitude", "latitude",  "ano", "mes",     "LST_d",     "LST_n" )
+
+tab_oco2_sif_media <- left_join(tab_oco2_sif_media, lst_dn,
+          c("longitude","latitude","ano","mes"))
+
 
 write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
 ```
