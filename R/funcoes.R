@@ -41,6 +41,25 @@ my_geo_stat <- function(df = dados_geo,
     theme_bw()
   ggsave(paste0("img/variograma_experimental/",variavel,"_",dia,".png"),vario_exp)
 
+  #validação cruzada
+  ## validação Cruzada
+  m <- vgm(1, modelo, 10, 0)
+  df_aux_g <- gstat(id=as.character(form)[2], formula = form, data=df_aux)
+  df_aux_g <- gstat(df_aux_g, model =  m, fill.all = TRUE)
+  x <- variogram(df_aux_g, cutoff = 20)
+  df_fit = fit.lmc(x, df_aux_g)
+  out = gstat.cv(df_fit, nmax = 16)
+  cross_validate <- out %>% as.tibble() %>%
+    ggplot(aes(x=observed,z.pred)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    ggpubr::stat_regline_equation(ggplot2::aes(
+      label =  paste(..eq.label.., ..rr.label.., sep = "*plain(\",\")~~")))+
+    theme_bw()
+  ggsave(paste0("img/validacao_cruzada/",variavel,"_",dia,"_",modelo,".png"),cross_validate)
+
+
+
   # modelando o semivariograma
   m_vario <- fit.variogram(vario,fit.method = 7,
                            vgm(1, modelo, 10, 0)

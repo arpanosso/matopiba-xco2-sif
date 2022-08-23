@@ -268,6 +268,21 @@ vario <- variogram(form, data=df_aux, cutoff=20, width=1.5,cressie=FALSE)
 m_vario <- fit.variogram(vario,
                          fit.method = 7,
                          vgm(1, "Sph", 10, 0))
+
+## validação Cruzada
+m <- vgm(1, "Sph", 10, 0)
+df_aux_g <- gstat(id=as.character(form)[2], formula = form, data=df_aux)
+df_aux_g <- gstat(df_aux_g, model =  m, fill.all = TRUE)
+x <- variogram(df_aux_g, cutoff = 20)
+df_fit = fit.lmc(x, df_aux_g)
+out = gstat.cv(df_fit, nmax = 16) 
+out %>% as.tibble() %>% 
+  ggplot(aes(x=observed,XCO2.pred)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggpubr::stat_regline_equation(ggplot2::aes(
+  label =  paste(..eq.label.., ..rr.label.., sep = "*plain(\",\")~~")))+
+  theme_bw()
 ```
 
 
@@ -333,16 +348,17 @@ mypar<-expand.grid(dia_ = lista_datas,
 
 ```{r}
 # my_geo_stat(df = dados_geo,
-#                         modelo = "Sph",
+#                       modelo = "Exp",
 #                         dia = "2014-09-01",
 #                         variavel="XCO2")
-# 
+
 # for(i in 1:nrow(mypar)){
 #   my_geo_stat(df = dados_geo,
 #                         modelo = mypar$modelo_[i] %>% as.character(),
 #                         dia = mypar$dia_[i] %>% as.character(),
 #                         variavel=mypar$variavel_[i]%>% as.character()
 #               )
+#   print(paste0("---",i,"/",nrow(mypar),"----"))
 # }
 ```
 
