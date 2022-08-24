@@ -447,7 +447,7 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
     debug.level=-1,  
     )
 #> [using ordinary kriging]
-#> 100% done
+#>  93% done100% done
 ```
 
 Mapa de padrões espaciais.
@@ -661,12 +661,13 @@ land_uses <- tab_oco2_sif_media %>% pull(value) %>%  unique()
 
 for(i in seq_along(land_uses)){
   print(land_uses[i])
-tab_oco2_sif_media %>% ungroup() %>% 
-  filter(value==land_uses[i]) %>% 
-  select(media_sif, media_xco2, LST_d, LST_n) %>% 
-  drop_na() %>% 
-  cor() %>%
-  corrplot::corrplot.mixed(lower = "number",lower.col = "black")
+  mc <- tab_oco2_sif_media %>% ungroup() %>% 
+    filter(value==land_uses[i]) %>% 
+    select(media_sif, media_xco2, LST_d, LST_n) %>% 
+    drop_na() %>% 
+    cor()
+  corrplot::corrplot.mixed(mc,lower = "number",lower.col = "black")
+  
 }
 #> [1] "Agriculture"
 ```
