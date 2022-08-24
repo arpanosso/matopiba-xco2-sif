@@ -26,11 +26,21 @@ my_geo_stat <- function(df = dados_geo,
     mutate(x = longitude, y=latitude) %>%
     select("x", "y", variavel)
   names(df_aux) <- c("x","y","z")
-  df_aux <- df_aux %>%
-    group_by(x,y) %>%
-    summarise(z = mean(z))
-  coordinates(df_aux)= ~ x+y
-  form<-z~1
+  if(variavel == "XCO2"){
+    df_aux <- df_aux %>%
+      mutate(
+        z=log(z)
+      ) %>%
+      group_by(x,y) %>%
+      summarise(z = mean(z))
+    }else{
+      df_aux <- df_aux %>%
+        group_by(x,y) %>%
+        summarise(z = mean(z))
+    }
+
+  coordinates(df_aux)= ~ x + y
+  form <- z ~ 1
 
   # Criando o variograma experimental
   vario <- variogram(form, data=df_aux, cutoff=20, width=1.5,cressie=FALSE)
@@ -69,7 +79,7 @@ my_geo_stat <- function(df = dados_geo,
   c0_c1<-round(sum(m_vario$psill),4)
   a<-round(m_vario$range[[2]],2)
   r2<-round(r2findWLS(m_vario,vario),8)
-  texto_ajuste <- paste(modelo,"(C0= ",c0,"; C0+C1= ", c0_c1, "; a= ", a,"; SQR = ", sqr.f1,"; R² = ",r2,")",sep="")
+  texto_ajuste <- paste(modelo,"(C0= ",c0,"; C0+C1= ", c0_c1, "; a= ", a,"; SQR = ", sqr.f1,"; R2 = ",r2,")",sep="")
   preds = gstat::variogramLine(m_vario, maxdist = max(vario$dist))
   semivar <- vario %>%
     ggplot(aes(dist, gamma)) +
@@ -89,19 +99,43 @@ my_geo_stat <- function(df = dados_geo,
                 na.action=na.pass,
                 debug.level=-1,
   )
-  krigagem <- tibble::as.tibble(ko_var) %>%
-    dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
-    ) %>%
-    dplyr::filter(flag) %>%
-    ggplot(aes(x=X, y=Y),color="black") +
-    geom_tile(aes(fill = var1.pred)) +
-    scale_fill_gradient(low = "yellow", high = "blue") +
-    coord_equal()+
-    tema_mapa()+
-    ggplot2::labs(fill=variavel,title = data_especifica) +
-    ggspatial::annotation_scale(
-      location="bl",
-      plot_unit="km",
-      height = ggplot2::unit(0.2,"cm"))
+
+  if(variavel == "XCO2"){
+    krigagem <- tibble::as.tibble(ko_var) %>%
+      mutate(
+        bt = exp(var1.pred + (var1.var/2)),
+        var1.pred = bt * (mean(exp(df_aux$z))/mean(bt)),
+        bt_c = (exp(mean(df_aux$z)+.5*var(df_aux$z))/exp(mean(var1.pred)+.5*var(var1.var)))*exp(var1.pred)
+      ) %>%
+      dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
+      ) %>%
+      dplyr::filter(flag) %>%
+      ggplot(aes(x=X, y=Y),color="black") +
+      geom_tile(aes(fill = var1.pred)) +
+      scale_fill_gradient(low = "yellow", high = "blue") +
+      coord_equal()+
+      tema_mapa()+
+      ggplot2::labs(fill=variavel,title = data_especifica) +
+      ggspatial::annotation_scale(
+        location="bl",
+        plot_unit="km",
+        height = ggplot2::unit(0.2,"cm"))
+
+  }else{
+    krigagem <- tibble::as.tibble(ko_var) %>%
+      dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
+      ) %>%
+      dplyr::filter(flag) %>%
+      ggplot(aes(x=X, y=Y),color="black") +
+      geom_tile(aes(fill = var1.pred)) +
+      scale_fill_gradient(low = "yellow", high = "blue") +
+      coord_equal()+
+      tema_mapa()+
+      ggplot2::labs(fill=variavel,title = data_especifica) +
+      ggspatial::annotation_scale(
+        location="bl",
+        plot_unit="km",
+        height = ggplot2::unit(0.2,"cm"))
+    }
   ggsave(paste0("img/krig/",variavel,"_",dia,"_",modelo,".png"),krigagem)
 }

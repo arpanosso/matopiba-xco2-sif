@@ -292,6 +292,7 @@ df_aux <- dados_geo %>% filter(mes_ano == data_especifica) %>%
   group_by(x,y) %>% 
   summarise(XCO2 = mean(XCO2))
 coordinates(df_aux)= ~ x+y
+# form<-XCO2~1
 form<-XCO2~1
 ```
 
@@ -308,11 +309,11 @@ m_vario <- fit.variogram(vario,
 
 ## validação Cruzada
 m <- vgm(1, "Sph", 10, 0)
-df_aux_g <- gstat(id=as.character(form)[2], formula = form, data=df_aux)
+df_aux_g <- gstat(id=as.character(form)[2], formula = XCO2~1, data=df_aux)
 df_aux_g <- gstat(df_aux_g, model =  m, fill.all = TRUE)
 x <- variogram(df_aux_g, cutoff = 20)
 df_fit = fit.lmc(x, df_aux_g)
-out = gstat.cv(df_fit, nmax = 16) 
+out = gstat.cv(df_fit, nmax = 40, verbose = FALSE) 
 #> [using ordinary kriging]
 #> [using ordinary kriging]
 #> [using ordinary kriging]
@@ -469,22 +470,63 @@ krigagem <- tibble::as.tibble(ko_var) %>%
 ggsave(paste0("img/krig/",data_especifica,"_modelo.png"),krigagem)
 ```
 
+[Yamamoto,
+2007](https://link.springer.com/article/10.1007/s10596-007-9046-x)
+
+[Journel,
+1978](https://trove.nla.gov.au/work/23680388?q&versionId=44967529)
+
+![y = k_0 \cdot exp \left\[ ln(\hat{y}\_{OK})+\frac{\sigma^2\_{OK}}{2} \right\]](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;y%20%3D%20k_0%20%5Ccdot%20exp%20%5Cleft%5B%20ln%28%5Chat%7By%7D_%7BOK%7D%29%2B%5Cfrac%7B%5Csigma%5E2_%7BOK%7D%7D%7B2%7D%20%5Cright%5D "y = k_0 \cdot exp \left[ ln(\hat{y}_{OK})+\frac{\sigma^2_{OK}}{2} \right]")
+
+De acordo com Noel Cressie, preditor não viciado de
+![Z](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;Z "Z")
+a qual sofreu transformação lognormal:
+
+![\breve{p}\_Z(Z;S_0) = exp(\hat{p}\_Y(Z;S_0)+\sigma^2\_{Y}(S_0)/2-var(\hat{p}\_Y(Z;S_0))/2)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cbreve%7Bp%7D_Z%28Z%3BS_0%29%20%3D%20exp%28%5Chat%7Bp%7D_Y%28Z%3BS_0%29%2B%5Csigma%5E2_%7BY%7D%28S_0%29%2F2-var%28%5Chat%7Bp%7D_Y%28Z%3BS_0%29%29%2F2%29 "\breve{p}_Z(Z;S_0) = exp(\hat{p}_Y(Z;S_0)+\sigma^2_{Y}(S_0)/2-var(\hat{p}_Y(Z;S_0))/2)")
+
+``` r
+krigagem_bt <- tibble::as.tibble(ko_var) %>%  
+  mutate(
+    pz = exp(var1.pred),
+    bt = exp(var1.pred + (var1.var/2)),
+    bt_2 = bt*(mean(df_aux$XCO2)/mean(bt))
+  ) %>% 
+  dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
+                ) %>% 
+  dplyr::filter(flag) %>% 
+  ggplot(aes(x=X, y=Y),color="black") + 
+  geom_tile(aes(fill = bt_2)) +
+  scale_fill_gradient(low = "yellow", high = "blue") + 
+  coord_equal()+
+  tema_mapa()+
+  ggplot2::labs(fill="xco2 (ppm)",title = data_especifica) +
+  ggspatial::annotation_scale(
+    location="bl",
+    plot_unit="km",
+    height = ggplot2::unit(0.2,"cm"))
+print(krigagem)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+
 ## Vamos criar um grid para testar todos os modelos
+
+<https://gis.stackexchange.com/questions/237574/backtransformation-of-kriging-predictions-and-variances>
 
 ``` r
 mypar<-expand.grid(dia_ = lista_datas, 
             modelo_ = c("Sph","Exp","Gau"),
-            variavel_ = c("XCO2","SIF"))
+            variavel_ = c("XCO2", "SIF"))
 ```
 
 ## Usando a `my_geo_stat` função para análise geoestatística
 
 ``` r
 # my_geo_stat(df = dados_geo,
-#                       modelo = "Exp",
+#                       modelo = "Gau",
 #                         dia = "2014-09-01",
 #                         variavel="XCO2")
-
+# 
 # for(i in 1:nrow(mypar)){
 #   my_geo_stat(df = dados_geo,
 #                         modelo = mypar$modelo_[i] %>% as.character(),
@@ -509,7 +551,7 @@ uso_solo_uni %>%
   facet_wrap(~ano)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 ``` r
 matopiba %>% 
@@ -522,7 +564,7 @@ matopiba %>%
   facet_wrap(~ano)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
 ## Juntando as duas bases de dados
 
@@ -554,6 +596,95 @@ write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
 
 [medias_oco2_sif.xlsx](https://github.com/arpanosso/matopiba-xco2-sif/raw/master/data/medias_oco2_sif_uso.xlsx)
 
+## Agora podemos fazer os gráficos
+
+``` r
+tab_oco2_sif_media  %>%  
+  group_by(região, ano, mes) %>%  
+  mutate(
+    media_xco2 = mean(media_xco2)
+  ) %>% 
+  ggplot(aes(x = mes_ano, y = media_xco2,
+                               color=região)) +
+  geom_line() +
+  theme_bw()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+
+``` r
+tab_oco2_sif_media  %>%  
+  group_by(região, ano, mes) %>%  
+  mutate(
+    media_sif = mean(media_sif)
+  ) %>% 
+  ggplot(aes(x = mes_ano, y = media_sif,
+                               color=região)) +
+  geom_line() +
+  theme_bw()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+
+``` r
+tab_oco2_sif_media  %>%  
+  group_by(região, ano, mes) %>%  
+  mutate(
+    media_LST_d = mean(LST_d, na.rm=TRUE)
+  ) %>% 
+  ggplot(aes(x = mes_ano, y = media_LST_d,
+                               color=região)) +
+  geom_line() +
+  theme_bw()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+
+``` r
+tab_oco2_sif_media  %>%  
+  group_by(região, ano, mes) %>%  
+  mutate(
+    media_LST_n = mean(LST_n,na.rm=TRUE)
+  ) %>% 
+  ggplot(aes(x = mes_ano, y = media_LST_n,
+                               color=região)) +
+  geom_line() +
+  theme_bw()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+
+## Correlação
+
+``` r
+land_uses <- tab_oco2_sif_media %>% pull(value) %>%  unique()
+
+for(i in seq_along(land_uses)){
+  print(land_uses[i])
+tab_oco2_sif_media %>% ungroup() %>% 
+  filter(value==land_uses[i]) %>% 
+  select(media_sif, media_xco2, LST_d, LST_n) %>% 
+  drop_na() %>% 
+  cor() %>%
+  corrplot::corrplot.mixed(lower = "number",lower.col = "black")
+}
+#> [1] "Agriculture"
+```
+
+![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+
+    #> [1] "Herbaceus Veg."
+
+![](README_files/figure-gfm/unnamed-chunk-29-2.png)<!-- -->
+
+    #> [1] "Shrubs"
+
+![](README_files/figure-gfm/unnamed-chunk-29-3.png)<!-- -->
+
+    #> [1] "Forest"
+
+![](README_files/figure-gfm/unnamed-chunk-29-4.png)<!-- -->
+
 ``` r
 tab_oco2_sif_media %>% 
   mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
@@ -571,7 +702,7 @@ tab_oco2_sif_media %>%
   stat_regline_equation(label.y = 391.2)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- --> \### Para
+![](README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- --> \### Para
 periodo de seca
 
 ``` r
@@ -593,7 +724,7 @@ tab_oco2_sif_media %>%
   labs(color = "Dry: value")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 ### Para período úmido
 
@@ -616,7 +747,7 @@ tab_oco2_sif_media %>%
   labs(color = "Wet: value")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ## Motivação, quais pontos apresentaram alteração do uso do solo?
 
@@ -632,7 +763,7 @@ tab_oco2_sif_uso %>%
   geom_point()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
 Mapear os dados acima
 
@@ -651,7 +782,7 @@ matopiba %>%
              aes(x=longitude,y=latitude),color="red")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
 Ideal é identificar no banco de dados quais são esses pontos, por meio
 da latitude e longitude
@@ -688,4 +819,4 @@ tab_oco2_sif_media  %>% ungroup() %>%
   stat_regline_equation(label.y = 391.2)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
