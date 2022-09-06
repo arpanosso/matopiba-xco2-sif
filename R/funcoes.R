@@ -119,7 +119,10 @@ my_geo_stat <- function(df = dados_geo,
       ggspatial::annotation_scale(
         location="bl",
         plot_unit="km",
-        height = ggplot2::unit(0.2,"cm"))
+        height = ggplot2::unit(0.2,"cm"))+
+      geom_polygon(data=poli_micro %>% as.tibble(),
+                   aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+                   size=1)
 
   }else{
     krigagem <- tibble::as.tibble(ko_var) %>%
@@ -135,7 +138,10 @@ my_geo_stat <- function(df = dados_geo,
       ggspatial::annotation_scale(
         location="bl",
         plot_unit="km",
-        height = ggplot2::unit(0.2,"cm"))
+        height = ggplot2::unit(0.2,"cm"))+
+      geom_polygon(data=poli_micro %>% as.tibble(),
+                   aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+                   size=1)
     }
   ggsave(paste0("img/krig/",variavel,"_",dia,"_",modelo,".png"),krigagem)
 }

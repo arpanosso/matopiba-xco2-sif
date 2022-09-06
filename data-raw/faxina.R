@@ -20,3 +20,20 @@ lst_dn <- read.table("data-raw/lst_dn.txt",
                         header = TRUE) %>%
   select(-ID)
 write_rds(lst_dn,"data/lst_dn.rds")
+
+
+library(sf)
+matopiba_shp <- st_read(
+  "data-raw//matopiba_aptidao_20201110_v2//matopiba_aptidao_20201110_v2.shp")
+st_geometry_type(matopiba_shp)
+st_crs(matopiba_shp)
+st_bbox(matopiba_shp)
+
+
+
+
+
+
+
+
+

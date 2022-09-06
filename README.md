@@ -75,11 +75,23 @@ oco2_br %>% glimpse()
 estados <- read_state(showProgress = FALSE)
 matopiba_filtro <- estados$abbrev_state %in% c("MA","PI","TO","BA")
 matopiba <- estados$geom[matopiba_filtro] 
+
+
+microregiao <- read_micro_region(showProgress = FALSE)
+micro_nomes <- read.table("data-raw/microregiao_nomes.txt",h=TRUE,sep="\t")
+microregiao_filtro <- microregiao$name_micro %in% micro_nomes$Microrregião
+
+poli_micro <- read.table("data-raw/digit.dat",sep=",") %>% as.matrix()
+colnames(poli_micro) <- c("X","Y")
+
+matopiba_micro <- microregiao$geom[microregiao_filtro]
+matopiba_micro <- matopiba_micro[-15]
 matopiba %>% 
   ggplot2::ggplot() +
   ggplot2::geom_sf(fill="white", color="black",
           size=.15, show.legend = FALSE) +
-  tema_mapa()
+  tema_mapa()+
+  geom_sf(data=matopiba_micro,fill="gray")
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
@@ -94,6 +106,10 @@ pol_to <- estados$geom %>% purrr::pluck(7) %>% as.matrix()
 pol_ma <- estados$geom %>% purrr::pluck(8) %>% as.matrix()
 pol_ba <- estados$geom %>% purrr::pluck(16) %>% as.matrix()
 pol_pi <- estados$geom %>% purrr::pluck(9) %>% as.matrix()
+
+
+pol_matopiba <- matopiba_micro%>% purrr::pluck(1)  %>% as.matrix()
+for(i in 2:31) pol_matopiba <-rbind(pol_matopiba, matopiba_micro%>% purrr::pluck(i)  %>% as.matrix())
 ```
 
 Utilizando a função `def_pol` para classificar se o ponto pertence, ou
@@ -105,7 +121,8 @@ data_set <- oco2_br %>%
     flag_to = def_pol(longitude, latitude, pol_to),
     flag_ma = def_pol(longitude, latitude, pol_ma),
     flag_ba = def_pol(longitude, latitude, pol_ba),
-    flag_pi = def_pol(longitude, latitude, pol_pi)
+    flag_pi = def_pol(longitude, latitude, pol_pi),
+    flag_matopiba = def_pol(longitude, latitude, poli_micro)
   )
 ```
 
@@ -122,7 +139,8 @@ matopiba %>%
   ggplot2::geom_point(data=data_set  %>%  dplyr::filter(flag_to |
                                                           flag_ma |
                                                           flag_pi |
-                                                          flag_ba, ano == 2014) ,
+                                                          flag_ba |
+                                                          flag_matopiba, ano == 2014) ,
                       ggplot2::aes(x=longitude,y=latitude),
                       shape=3,
                       col="red",
@@ -145,6 +163,7 @@ data_set  %>%
   dplyr::filter(flag)  %>%  
   dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
   dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
+  # dplyr::filter(região == "matopiba") %>% 
   dplyr::group_by(região, ano, mes) %>%  
   dplyr::summarise(media_co2 = mean(XCO2, na.rm=TRUE)) %>% 
     dplyr::mutate(
@@ -447,7 +466,7 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
     debug.level=-1,  
     )
 #> [using ordinary kriging]
-#>  93% done100% done
+#>  13% done100% done
 ```
 
 Mapa de padrões espaciais.
@@ -492,8 +511,8 @@ krigagem_bt <- tibble::as.tibble(ko_var) %>%
     bt_2 = bt*(mean(df_aux$XCO2)/mean(bt))
   ) %>% 
   dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
-                ) %>% 
-  dplyr::filter(flag) %>% 
+                ) %>%
+  dplyr::filter(flag) %>%
   ggplot(aes(x=X, y=Y),color="black") + 
   geom_tile(aes(fill = bt_2)) +
   scale_fill_gradient(low = "yellow", high = "blue") + 
@@ -503,8 +522,11 @@ krigagem_bt <- tibble::as.tibble(ko_var) %>%
   ggspatial::annotation_scale(
     location="bl",
     plot_unit="km",
-    height = ggplot2::unit(0.2,"cm"))
-print(krigagem)
+    height = ggplot2::unit(0.2,"cm"))+
+  geom_polygon(data=poli_micro %>% as.tibble(),
+               aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+               size=1)
+print(krigagem_bt)
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
@@ -522,10 +544,104 @@ mypar<-expand.grid(dia_ = lista_datas,
 ## Usando a `my_geo_stat` função para análise geoestatística
 
 ``` r
-# my_geo_stat(df = dados_geo,
-#                       modelo = "Gau",
-#                         dia = "2014-09-01",
-#                         variavel="XCO2")
+my_geo_stat(df = dados_geo,
+                      modelo = "Gau",
+                        dia = "2014-09-01",
+                        variavel="XCO2")
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#> [using ordinary kriging]
+#>  67% done100% done
 # 
 # for(i in 1:nrow(mypar)){
 #   my_geo_stat(df = dados_geo,
