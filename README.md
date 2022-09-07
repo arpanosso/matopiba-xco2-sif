@@ -106,10 +106,6 @@ pol_to <- estados$geom %>% purrr::pluck(7) %>% as.matrix()
 pol_ma <- estados$geom %>% purrr::pluck(8) %>% as.matrix()
 pol_ba <- estados$geom %>% purrr::pluck(16) %>% as.matrix()
 pol_pi <- estados$geom %>% purrr::pluck(9) %>% as.matrix()
-
-
-pol_matopiba <- matopiba_micro%>% purrr::pluck(1)  %>% as.matrix()
-for(i in 2:31) pol_matopiba <-rbind(pol_matopiba, matopiba_micro%>% purrr::pluck(i)  %>% as.matrix())
 ```
 
 Utilizando a função `def_pol` para classificar se o ponto pertence, ou
@@ -466,7 +462,7 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
     debug.level=-1,  
     )
 #> [using ordinary kriging]
-#>  13% done100% done
+#>  21% done100% done
 ```
 
 Mapa de padrões espaciais.
@@ -510,7 +506,7 @@ krigagem_bt <- tibble::as.tibble(ko_var) %>%
     bt = exp(var1.pred + (var1.var/2)),
     bt_2 = bt*(mean(df_aux$XCO2)/mean(bt))
   ) %>% 
-  dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
+  dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba) | def_pol(X,Y,poli_micro)
                 ) %>%
   dplyr::filter(flag) %>%
   ggplot(aes(x=X, y=Y),color="black") + 
@@ -544,104 +540,10 @@ mypar<-expand.grid(dia_ = lista_datas,
 ## Usando a `my_geo_stat` função para análise geoestatística
 
 ``` r
-my_geo_stat(df = dados_geo,
-                      modelo = "Gau",
-                        dia = "2014-09-01",
-                        variavel="XCO2")
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#>  67% done100% done
+# my_geo_stat(df = dados_geo,
+#                       modelo = "Gau",
+#                         dia = "2014-09-01",
+#                         variavel="XCO2")
 # 
 # for(i in 1:nrow(mypar)){
 #   my_geo_stat(df = dados_geo,

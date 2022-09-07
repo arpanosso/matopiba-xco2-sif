@@ -107,7 +107,9 @@ my_geo_stat <- function(df = dados_geo,
         var1.pred = bt * (mean(exp(df_aux$z))/mean(bt)),
         bt_c = (exp(mean(df_aux$z)+.5*var(df_aux$z))/exp(mean(var1.pred)+.5*var(var1.var)))*exp(var1.pred)
       ) %>%
-      dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
+      dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to)
+                    | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
+                    | def_pol(X,Y,poli_micro)
       ) %>%
       dplyr::filter(flag) %>%
       ggplot(aes(x=X, y=Y),color="black") +
@@ -126,7 +128,9 @@ my_geo_stat <- function(df = dados_geo,
 
   }else{
     krigagem <- tibble::as.tibble(ko_var) %>%
-      dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
+      dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to)
+                    | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
+                    | def_pol(X,Y,poli_micro)
       ) %>%
       dplyr::filter(flag) %>%
       ggplot(aes(x=X, y=Y),color="black") +
