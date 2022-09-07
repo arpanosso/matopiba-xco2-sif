@@ -462,7 +462,7 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
     debug.level=-1,  
     )
 #> [using ordinary kriging]
-#>  21% done100% done
+#>  87% done100% done
 ```
 
 Mapa de padrões espaciais.
@@ -555,6 +555,21 @@ mypar<-expand.grid(dia_ = lista_datas,
 # }
 ```
 
+## Após a seleção de modelos, vamos fazer todos as figuras novamente.
+
+``` r
+#modelos <- read_excel("data/modelos.xlsx")
+
+# for(i in 61:nrow(modelos)){
+#   my_geo_stat(df = dados_geo,
+#                         modelo = modelos$modelo_[i] %>% as.character(),
+#                         dia = modelos$dia_[i] %>% as.character(),
+#                         variavel = modelos$variavel_[i] %>% as.character()
+#               )
+#   print(paste0("---",i,"/",nrow(modelos),"----"))
+# }
+```
+
 ## Juntando os diferentes usos do solo para a região
 
 ``` r
@@ -569,7 +584,7 @@ uso_solo_uni %>%
   facet_wrap(~ano)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
 ``` r
 matopiba %>% 
@@ -582,7 +597,7 @@ matopiba %>%
   facet_wrap(~ano)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 ## Juntando as duas bases de dados
 
@@ -628,7 +643,7 @@ tab_oco2_sif_media  %>%
   theme_bw()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media  %>%  
@@ -642,7 +657,7 @@ tab_oco2_sif_media  %>%
   theme_bw()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media  %>%  
@@ -656,7 +671,7 @@ tab_oco2_sif_media  %>%
   theme_bw()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media  %>%  
@@ -670,7 +685,7 @@ tab_oco2_sif_media  %>%
   theme_bw()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
 
 ## Correlação
 
@@ -690,19 +705,19 @@ for(i in seq_along(land_uses)){
 #> [1] "Agriculture"
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
 
     #> [1] "Herbaceus Veg."
 
-![](README_files/figure-gfm/unnamed-chunk-29-2.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-30-2.png)<!-- -->
 
     #> [1] "Shrubs"
 
-![](README_files/figure-gfm/unnamed-chunk-29-3.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-30-3.png)<!-- -->
 
     #> [1] "Forest"
 
-![](README_files/figure-gfm/unnamed-chunk-29-4.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-30-4.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media %>% 
@@ -721,7 +736,7 @@ tab_oco2_sif_media %>%
   stat_regline_equation(label.y = 391.2)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- --> \### Para
+![](README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- --> \### Para
 periodo de seca
 
 ``` r
@@ -743,7 +758,7 @@ tab_oco2_sif_media %>%
   labs(color = "Dry: value")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ### Para período úmido
 
@@ -766,7 +781,7 @@ tab_oco2_sif_media %>%
   labs(color = "Wet: value")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
 ## Motivação, quais pontos apresentaram alteração do uso do solo?
 
@@ -782,7 +797,7 @@ tab_oco2_sif_uso %>%
   geom_point()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
 Mapear os dados acima
 
@@ -801,7 +816,7 @@ matopiba %>%
              aes(x=longitude,y=latitude),color="red")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
 
 Ideal é identificar no banco de dados quais são esses pontos, por meio
 da latitude e longitude
@@ -838,4 +853,4 @@ tab_oco2_sif_media  %>% ungroup() %>%
   stat_regline_equation(label.y = 391.2)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->

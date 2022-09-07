@@ -423,6 +423,21 @@ mypar<-expand.grid(dia_ = lista_datas,
 # }
 ```
 
+## Após a seleção de modelos, vamos fazer todos as figuras novamente.
+
+```{r}
+#modelos <- read_excel("data/modelos.xlsx")
+
+# for(i in 61:nrow(modelos)){
+#   my_geo_stat(df = dados_geo,
+#                         modelo = modelos$modelo_[i] %>% as.character(),
+#                         dia = modelos$dia_[i] %>% as.character(),
+#                         variavel = modelos$variavel_[i] %>% as.character()
+#               )
+#   print(paste0("---",i,"/",nrow(modelos),"----"))
+# }
+```
+
 ## Juntando os diferentes usos do solo para a região
 
 ```{r}
