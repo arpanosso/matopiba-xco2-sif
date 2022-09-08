@@ -17,12 +17,12 @@ knitr::opts_chunk$set(
 ## Pacotes exigidos
 
 ```{r}
-library(ggpubr)
 library(tidyverse)
-library(geobr)
 library(writexl)
-library(sp)
+library(ggpubr)
 library(gstat)
+library(geobr)
+library(sp)
 source("r/graficos.R")
 source("r/funcoes.R")
 ```
@@ -53,17 +53,16 @@ oco2_br %>% glimpse()
 ## Definição da região de trabalho
 
 ```{r,message=FALSE, warning=FALSE, error= FALSE}
-estados <- read_state(showProgress = FALSE)
-matopiba_filtro <- estados$abbrev_state %in% c("MA","PI","TO","BA")
-matopiba <- estados$geom[matopiba_filtro] 
+estados <- read_state(showProgress = FALSE) # carregando estados
+matopiba_filtro <- estados$abbrev_state %in% c("MA","PI","TO","BA") # filtrando estados
+matopiba <- estados$geom[matopiba_filtro] ## estados do matopiba
 
+microregiao <- read_micro_region(showProgress = FALSE) # buscando as microregioes
+micro_nomes <- read.table("data-raw/microregiao_nomes.txt",h=TRUE,sep="\t") ## dados retirados da wikipedia
+microregiao_filtro <- microregiao$name_micro %in% micro_nomes$Microrregião ## filtro por microregiao
 
-microregiao <- read_micro_region(showProgress = FALSE)
-micro_nomes <- read.table("data-raw/microregiao_nomes.txt",h=TRUE,sep="\t")
-microregiao_filtro <- microregiao$name_micro %in% micro_nomes$Microrregião
-
-poli_micro <- read.table("data-raw/digit.dat",sep=",") %>% as.matrix()
-colnames(poli_micro) <- c("X","Y")
+poli_micro <- read.table("data-raw/digit.dat",sep=",") %>% as.matrix() ## lendo o polígono editado manualmente pelo surfer
+colnames(poli_micro) <- c("X","Y") ## renomaenado colunas
 
 matopiba_micro <- microregiao$geom[microregiao_filtro]
 matopiba_micro <- matopiba_micro[-15]
@@ -73,7 +72,6 @@ matopiba %>%
           size=.15, show.legend = FALSE) +
   tema_mapa()+
   geom_sf(data=matopiba_micro,fill="gray")
-
 ```
 
 ## Dados de xCO2 e SIF
@@ -146,7 +144,6 @@ data_set  %>%
   ggplot2::theme_bw()
 ```
 
-
 ## Gráfico do SIF
 ```{r,message=FALSE, warning=FALSE, error= FALSE}
 data_set  %>%  filter(SIF >= 0) %>% 
@@ -218,225 +215,7 @@ tab_oco2_sif_media %>%
 
 [medias_oco2_sif.xlsx](https://github.com/arpanosso/matopiba-xco2-sif/raw/master/data/medias_oco2_sif.xlsx)
 
-## Análise geoestatística
 
-### Criando o modelo de variabilidade espacial
-
-Inicialmente, devemos criar o banco de dados com as amostras para a geoestatística espaço-temporal.
-
-```{r}
-dados_geo <- data_set  %>%  filter(SIF >= 0) %>% 
-    tidyr::pivot_longer(
-    dplyr::starts_with("flag"),
-    names_to = "região",
-    values_to = "flag"
-  ) %>% 
-  dplyr::filter(flag)  %>%  
-  dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
-  dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
-  mutate(
-    mes_ano = lubridate::make_date(ano, mes, 1)
-  ) %>% 
-  select(longitude, latitude, mes_ano, XCO2, SIF)
-dados_geo %>% glimpse()
-```
-
-Criando o grid de refinamento para a plotagem de pontos em locais não amostrados
-
-
-```{r}
-minX_pol <- min(pol_ma[,1],pol_to[,1],pol_pi[,1],pol_ba[,1])
-maxX_pol <- max(pol_ma[,1],pol_to[,1],pol_pi[,1],pol_ba[,1])
-minY_pol <- min(pol_ma[,2],pol_to[,2],pol_pi[,2],pol_ba[,2])
-maxY_pol <- max(pol_ma[,2],pol_to[,2],pol_pi[,2],pol_ba[,2])
-#x<-df_aux$x
-#y<-df_aux$y
-dis <- .1 #Distância entre pontos
-grid <- expand.grid(X=seq(min(minX_pol),max(maxX_pol),dis), Y=seq(min(minY_pol),max(maxY_pol),dis))
-gridded(grid) = ~ X + Y
-plot(grid)
-```
-
-
-
-Vamos filtrar para uma data específica e criar
-
-```{r}
-lista_datas <- dados_geo$mes_ano %>% unique()
-data_especifica <- "2014-09-01"
-df_aux <- dados_geo %>% filter(mes_ano == data_especifica) %>% 
-  mutate(x = longitude, y=latitude) %>% 
-  select(x, y, XCO2) %>% 
-  group_by(x,y) %>% 
-  summarise(XCO2 = mean(XCO2))
-coordinates(df_aux)= ~ x+y
-# form<-XCO2~1
-form<-XCO2~1
-```
-
-
-
-Verificando o Variograma experimental
-```{r}
-vario <- variogram(form, data=df_aux, cutoff=20, width=1.5,cressie=FALSE)
-# vario  %>%
-#   ggplot(aes(x=dist, y=gamma)) +
-#   geom_point()
-m_vario <- fit.variogram(vario,
-                         fit.method = 7,
-                         vgm(1, "Sph", 10, 0))
-
-## validação Cruzada
-m <- vgm(1, "Sph", 10, 0)
-df_aux_g <- gstat(id=as.character(form)[2], formula = XCO2~1, data=df_aux)
-df_aux_g <- gstat(df_aux_g, model =  m, fill.all = TRUE)
-x <- variogram(df_aux_g, cutoff = 20)
-df_fit = fit.lmc(x, df_aux_g)
-out = gstat.cv(df_fit, nmax = 40, verbose = FALSE) 
-out %>% as.tibble() %>% 
-  ggplot(aes(x=observed,XCO2.pred)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  ggpubr::stat_regline_equation(ggplot2::aes(
-  label =  paste(..eq.label.., ..rr.label.., sep = "*plain(\",\")~~")))+
-  theme_bw()
-```
-
-
-```{r}
-sqr.f1<-round(attr(m_vario, "SSErr"),4); c0<-round(m_vario$psill[[1]],4); c0_c1<-round(sum(m_vario$psill),4);a<-round(m_vario$range[[2]],2)
-r2<-round(r2findWLS(m_vario,vario),8)
-texto_ajuste <- paste("Esf(C0= ",c0,"; C0+C1= ", c0_c1, "; a= ", a,"; SQR = ", sqr.f1,"; R² = ",r2,")",sep="")
-preds = gstat::variogramLine(m_vario, maxdist = max(vario$dist))
-semivar <- vario %>% 
-  ggplot(aes(dist, gamma)) +
-  geom_point() +
-  geom_line(data = preds) + 
-  theme_bw() +
-  labs(x="Distância de separação", y="Semivariância",
-       title=data_especifica,
-       subtitle = texto_ajuste)+
-  coord_cartesian(ylim = c(0,max(vario$gamma)))
-ggsave(paste0("img/variograma/",data_especifica,"_modelo.png"),semivar)
-```
-
-### Krigragem ordinária (KO)
-
-Utilizando o algoritmo de KO, vamos estimar xco2/sif nos locais não amostrados.
-
-```{r}
-ko_var<-krige(formula=form, df_aux, grid, model=m_vario, 
-    block=c(0,0),
-    nsim=0,
-    na.action=na.pass,
-    debug.level=-1,  
-    )
-```
-
-Mapa de padrões espaciais.
-
-```{r}
-krigagem <- tibble::as.tibble(ko_var) %>%  
-  dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
-                ) %>% 
-  dplyr::filter(flag) %>% 
-  ggplot(aes(x=X, y=Y),color="black") + 
-  geom_tile(aes(fill = var1.pred)) +
-  scale_fill_gradient(low = "yellow", high = "blue") + 
-  coord_equal()+
-  tema_mapa()+
-  ggplot2::labs(fill="xco2 (ppm)",title = data_especifica) +
-  ggspatial::annotation_scale(
-    location="bl",
-    plot_unit="km",
-    height = ggplot2::unit(0.2,"cm"))
-ggsave(paste0("img/krig/",data_especifica,"_modelo.png"),krigagem)
-```
-
-[Yamamoto, 2007](https://link.springer.com/article/10.1007/s10596-007-9046-x)
-
-[Journel, 1978](https://trove.nla.gov.au/work/23680388?q&versionId=44967529)
-
-$$
-y = k_0 \cdot exp \left[ ln(\hat{y}_{OK})+\frac{\sigma^2_{OK}}{2} \right]
-$$
-
-De acordo com Noel Cressie, preditor não viciado de $Z$ a qual sofreu transformação lognormal:
-
-$$
-\breve{p}_Z(Z;S_0) = exp(\hat{p}_Y(Z;S_0)+\sigma^2_{Y}(S_0)/2-var(\hat{p}_Y(Z;S_0))/2)
-$$
-
-```{r}
-krigagem_bt <- tibble::as.tibble(ko_var) %>%  
-  mutate(
-    pz = exp(var1.pred),
-    bt = exp(var1.pred + (var1.var/2)),
-    bt_2 = bt*(mean(df_aux$XCO2)/mean(bt))
-  ) %>% 
-  dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba) | def_pol(X,Y,poli_micro)
-                ) %>%
-  dplyr::filter(flag) %>%
-  ggplot(aes(x=X, y=Y),color="black") + 
-  geom_tile(aes(fill = bt_2)) +
-  scale_fill_gradient(low = "yellow", high = "blue") + 
-  coord_equal()+
-  tema_mapa()+
-  ggplot2::labs(fill="xco2 (ppm)",title = data_especifica) +
-  ggspatial::annotation_scale(
-    location="bl",
-    plot_unit="km",
-    height = ggplot2::unit(0.2,"cm"))+
-  geom_polygon(data=poli_micro %>% as.tibble(),
-               aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
-               size=1)
-print(krigagem_bt)
-```
-
-
-
-## Vamos criar um grid para testar todos os modelos
-
-https://gis.stackexchange.com/questions/237574/backtransformation-of-kriging-predictions-and-variances
-
-```{r}
-mypar<-expand.grid(dia_ = lista_datas, 
-            modelo_ = c("Sph","Exp","Gau"),
-            variavel_ = c("XCO2", "SIF"))
-```
-
-## Usando a `my_geo_stat` função para análise geoestatística
-
-```{r}
-# my_geo_stat(df = dados_geo,
-#                       modelo = "Gau",
-#                         dia = "2014-09-01",
-#                         variavel="XCO2")
-# 
-# for(i in 1:nrow(mypar)){
-#   my_geo_stat(df = dados_geo,
-#                         modelo = mypar$modelo_[i] %>% as.character(),
-#                         dia = mypar$dia_[i] %>% as.character(),
-#                         variavel=mypar$variavel_[i]%>% as.character()
-#               )
-#   print(paste0("---",i,"/",nrow(mypar),"----"))
-# }
-```
-
-## Após a seleção de modelos, vamos fazer todos as figuras novamente.
-
-```{r}
-#modelos <- read_excel("data/modelos.xlsx")
-
-# for(i in 61:nrow(modelos)){
-#   my_geo_stat(df = dados_geo,
-#                         modelo = modelos$modelo_[i] %>% as.character(),
-#                         dia = modelos$dia_[i] %>% as.character(),
-#                         variavel = modelos$variavel_[i] %>% as.character()
-#               )
-#   print(paste0("---",i,"/",nrow(modelos),"----"))
-# }
-```
 
 ## Juntando os diferentes usos do solo para a região
 
@@ -463,6 +242,7 @@ matopiba %>%
                       ggplot2::aes(x=longitude,y=latitude,color=value)) +
   facet_wrap(~ano)
 ```
+
 
 ## Juntando as duas bases de dados
 
@@ -500,24 +280,24 @@ write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
 
 ```{r}
 tab_oco2_sif_media  %>%  
-  group_by(região, ano, mes) %>%  
+  group_by(value, ano, mes) %>%  
   mutate(
     media_xco2 = mean(media_xco2)
   ) %>% 
   ggplot(aes(x = mes_ano, y = media_xco2,
-                               color=região)) +
+                               color=value)) +
   geom_line() +
   theme_bw()
 ```
 
 ```{r}
 tab_oco2_sif_media  %>%  
-  group_by(região, ano, mes) %>%  
+  group_by(value, ano, mes) %>%  
   mutate(
     media_sif = mean(media_sif)
   ) %>% 
   ggplot(aes(x = mes_ano, y = media_sif,
-                               color=região)) +
+                               color=value)) +
   geom_line() +
   theme_bw()
 ```
@@ -525,26 +305,24 @@ tab_oco2_sif_media  %>%
 
 ```{r}
 tab_oco2_sif_media  %>%  
-  group_by(região, ano, mes) %>%  
+  group_by(value, ano, mes) %>%  
   mutate(
     media_LST_d = mean(LST_d, na.rm=TRUE)
   ) %>% 
   ggplot(aes(x = mes_ano, y = media_LST_d,
-                               color=região)) +
+                               color=value)) +
   geom_line() +
   theme_bw()
 ```
 
-
-
 ```{r}
 tab_oco2_sif_media  %>%  
-  group_by(região, ano, mes) %>%  
+  group_by(value, ano, mes) %>%  
   mutate(
     media_LST_n = mean(LST_n,na.rm=TRUE)
   ) %>% 
   ggplot(aes(x = mes_ano, y = media_LST_n,
-                               color=região)) +
+                               color=value)) +
   geom_line() +
   theme_bw()
 ```
@@ -691,4 +469,232 @@ tab_oco2_sif_media  %>% ungroup() %>%
   stat_cor(label.y = 390) + 
   stat_regline_equation(label.y = 391.2)
 ```
+
+
+# Análise geoestatística
+
+### Criando o modelo de variabilidade espacial
+
+Inicialmente, devemos criar o banco de dados com as amostras para a geoestatística espaço-temporal.
+
+```{r}
+dados_geo <- data_set  %>%  filter(SIF >= 0) %>% 
+    tidyr::pivot_longer(
+    dplyr::starts_with("flag"),
+    names_to = "região",
+    values_to = "flag"
+  ) %>% 
+  dplyr::filter(flag)  %>%  
+  dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
+  dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
+  mutate(
+    mes_ano = lubridate::make_date(ano, mes, 1)
+  ) %>% 
+  select(longitude, latitude, mes_ano, XCO2, SIF)
+
+dados_geo <- dados_geo %>% 
+  left_join(tab_oco2_sif_media,c("longitude","latitude","mes_ano")) %>% 
+  drop_na()
+
+dados_geo %>% glimpse()
+```
+
+Criando o grid de refinamento para a plotagem de pontos em locais não amostrados
+
+
+```{r}
+minX_pol <- min(pol_ma[,1],pol_to[,1],pol_pi[,1],pol_ba[,1])
+maxX_pol <- max(pol_ma[,1],pol_to[,1],pol_pi[,1],pol_ba[,1])
+minY_pol <- min(pol_ma[,2],pol_to[,2],pol_pi[,2],pol_ba[,2])
+maxY_pol <- max(pol_ma[,2],pol_to[,2],pol_pi[,2],pol_ba[,2])
+#x<-df_aux$x
+#y<-df_aux$y
+dis <- .1 #Distância entre pontos
+grid <- expand.grid(X=seq(min(minX_pol),max(maxX_pol),dis), Y=seq(min(minY_pol),max(maxY_pol),dis))
+gridded(grid) = ~ X + Y
+plot(grid)
+```
+
+
+
+Vamos filtrar para uma data específica e criar
+
+```{r}
+lista_datas <- dados_geo$mes_ano %>% unique()
+data_especifica <- "2015-03-01"
+df_aux <- dados_geo %>% filter(mes_ano == data_especifica) %>% 
+  mutate(x = longitude, y=latitude) %>% 
+  select(x, y, LST_d) %>% 
+  group_by(x,y) %>% 
+  summarise(LST_d = mean(LST_d))
+coordinates(df_aux)= ~ x+y
+# form<-XCO2~1
+form<-LST_d~1
+```
+
+
+
+Verificando o Variograma experimental
+```{r}
+vario <- variogram(form, data=df_aux, cutoff=20, width=1.5,cressie=FALSE)
+# vario  %>%
+#   ggplot(aes(x=dist, y=gamma)) +
+#   geom_point()
+m_vario <- fit.variogram(vario,
+                         fit.method = 7,
+                         vgm(1, "Sph", 10, 0))
+
+## validação Cruzada
+m <- vgm(1, "Sph", 10, 0)
+df_aux_g <- gstat(id=as.character(form)[2], formula = LST_d~1, data=df_aux)
+df_aux_g <- gstat(df_aux_g, model =  m, fill.all = TRUE)
+x <- variogram(df_aux_g, cutoff = 20)
+df_fit = fit.lmc(x, df_aux_g)
+out = gstat.cv(df_fit, nmax = 40, verbose = FALSE) 
+out %>% as.tibble() %>% 
+  ggplot(aes(x=observed,LST_d.pred)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggpubr::stat_regline_equation(ggplot2::aes(
+  label =  paste(..eq.label.., ..rr.label.., sep = "*plain(\",\")~~")))+
+  theme_bw()
+```
+
+
+```{r}
+sqr.f1<-round(attr(m_vario, "SSErr"),4); c0<-round(m_vario$psill[[1]],4); c0_c1<-round(sum(m_vario$psill),4);a<-round(m_vario$range[[2]],2)
+r2<-round(r2findWLS(m_vario,vario),8)
+texto_ajuste <- paste("Esf(C0= ",c0,"; C0+C1= ", c0_c1, "; a= ", a,"; SQR = ", sqr.f1,"; R² = ",r2,")",sep="")
+preds = gstat::variogramLine(m_vario, maxdist = max(vario$dist))
+semivar <- vario %>% 
+  ggplot(aes(dist, gamma)) +
+  geom_point() +
+  geom_line(data = preds) + 
+  theme_bw() +
+  labs(x="Distância de separação", y="Semivariância",
+       title=data_especifica,
+       subtitle = texto_ajuste)+
+  coord_cartesian(ylim = c(0,max(vario$gamma)))
+ggsave(paste0("img/variograma/",data_especifica,"_modelo.png"),semivar)
+```
+
+### Krigragem ordinária (KO)
+
+Utilizando o algoritmo de KO, vamos estimar xco2/sif nos locais não amostrados.
+
+```{r}
+ko_var<-krige(formula=form, df_aux, grid, model=m_vario, 
+    block=c(0,0),
+    nsim=0,
+    na.action=na.pass,
+    debug.level=-1,  
+    )
+```
+
+Mapa de padrões espaciais.
+
+```{r}
+krigagem <- tibble::as.tibble(ko_var) %>%  
+  dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba)
+                ) %>% 
+  dplyr::filter(flag) %>% 
+  ggplot(aes(x=X, y=Y),color="black") + 
+  geom_tile(aes(fill = var1.pred)) +
+  scale_fill_gradient(low = "yellow", high = "blue") + 
+  coord_equal()+
+  tema_mapa()+
+  ggplot2::labs(fill="xco2 (ppm)",title = data_especifica) +
+  ggspatial::annotation_scale(
+    location="bl",
+    plot_unit="km",
+    height = ggplot2::unit(0.2,"cm"))
+ggsave(paste0("img/krig/",data_especifica,"_modelo.png"),krigagem)
+print(krigagem)
+```
+
+[Yamamoto, 2007](https://link.springer.com/article/10.1007/s10596-007-9046-x)
+
+[Journel, 1978](https://trove.nla.gov.au/work/23680388?q&versionId=44967529)
+
+$$
+y = k_0 \cdot exp \left[ ln(\hat{y}_{OK})+\frac{\sigma^2_{OK}}{2} \right]
+$$
+
+De acordo com Noel Cressie, preditor não viciado de $Z$ a qual sofreu transformação lognormal:
+
+$$
+\breve{p}_Z(Z;S_0) = exp(\hat{p}_Y(Z;S_0)+\sigma^2_{Y}(S_0)/2-var(\hat{p}_Y(Z;S_0))/2)
+$$
+
+```{r}
+krigagem_bt <- tibble::as.tibble(ko_var) %>%  
+  mutate(
+    pz = exp(var1.pred),
+    bt = exp(var1.pred + (var1.var/2)),
+    bt_2 = bt*(mean(df_aux$XCO2)/mean(bt))
+  ) %>% 
+  dplyr::mutate(flag = def_pol(X,Y,pol_ma) | def_pol(X,Y,pol_to) | def_pol(X,Y,pol_pi) | def_pol(X,Y,pol_ba) | def_pol(X,Y,poli_micro)
+                ) %>%
+  dplyr::filter(flag) %>%
+  ggplot(aes(x=X, y=Y),color="black") + 
+  geom_tile(aes(fill = bt_2)) +
+  scale_fill_gradient(low = "yellow", high = "blue") + 
+  coord_equal()+
+  tema_mapa()+
+  ggplot2::labs(fill="xco2 (ppm)",title = data_especifica) +
+  ggspatial::annotation_scale(
+    location="bl",
+    plot_unit="km",
+    height = ggplot2::unit(0.2,"cm"))+
+  geom_polygon(data=poli_micro %>% as.tibble(),
+               aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+               size=1)
+print(krigagem_bt)
+```
+
+
+
+## Vamos criar um grid para testar todos os modelos
+
+https://gis.stackexchange.com/questions/237574/backtransformation-of-kriging-predictions-and-variances
+
+```{r}
+mypar<-expand.grid(dia_ = lista_datas, 
+            modelo_ = c("Sph","Exp","Gau"),
+            variavel_ = c("LST_d", "LST_n"))
+```
+
+## Usando a `my_geo_stat` função para análise geoestatística
+
+```{r}
+# my_geo_stat(df = dados_geo,
+#                       modelo = "Gau",
+#                         dia = "2015-01-01",
+#                         variavel="LST_d")
+# 
+# for(i in 167:nrow(mypar)){
+#   my_geo_stat(df = dados_geo,
+#                         modelo = mypar$modelo_[i] %>% as.character(),
+#                         dia = mypar$dia_[i] %>% as.character(),
+#                         variavel=mypar$variavel_[i]%>% as.character()
+#               )
+#   print(paste0("---",i,"/",nrow(mypar),"----"))
+# }
+```
+
+## Após a seleção de modelos, vamos fazer todos as figuras novamente.
+
+```{r}
+# modelos <- readxl::read_excel("data/modelos_LST_d.xlsx")
+# 
+# for(i in 1:nrow(modelos)){
+#   my_geo_stat(df = dados_geo,
+#                         modelo = modelos$modelo_[i] %>% as.character(),
+#                         dia = modelos$dia_[i] %>% as.character(),
+#                         variavel = modelos$variavel_[i] %>% as.character()
+#               )
+#   print(paste0("---",i,"/",nrow(modelos),"----"))
+# }
+```
+
 

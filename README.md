@@ -4,12 +4,12 @@
 ## Pacotes exigidos
 
 ``` r
-library(ggpubr)
 library(tidyverse)
-library(geobr)
 library(writexl)
-library(sp)
+library(ggpubr)
 library(gstat)
+library(geobr)
+library(sp)
 source("r/graficos.R")
 source("r/funcoes.R")
 ```
@@ -72,17 +72,16 @@ oco2_br %>% glimpse()
 ## Definição da região de trabalho
 
 ``` r
-estados <- read_state(showProgress = FALSE)
-matopiba_filtro <- estados$abbrev_state %in% c("MA","PI","TO","BA")
-matopiba <- estados$geom[matopiba_filtro] 
+estados <- read_state(showProgress = FALSE) # carregando estados
+matopiba_filtro <- estados$abbrev_state %in% c("MA","PI","TO","BA") # filtrando estados
+matopiba <- estados$geom[matopiba_filtro] ## estados do matopiba
 
+microregiao <- read_micro_region(showProgress = FALSE) # buscando as microregioes
+micro_nomes <- read.table("data-raw/microregiao_nomes.txt",h=TRUE,sep="\t") ## dados retirados da wikipedia
+microregiao_filtro <- microregiao$name_micro %in% micro_nomes$Microrregião ## filtro por microregiao
 
-microregiao <- read_micro_region(showProgress = FALSE)
-micro_nomes <- read.table("data-raw/microregiao_nomes.txt",h=TRUE,sep="\t")
-microregiao_filtro <- microregiao$name_micro %in% micro_nomes$Microrregião
-
-poli_micro <- read.table("data-raw/digit.dat",sep=",") %>% as.matrix()
-colnames(poli_micro) <- c("X","Y")
+poli_micro <- read.table("data-raw/digit.dat",sep=",") %>% as.matrix() ## lendo o polígono editado manualmente pelo surfer
+colnames(poli_micro) <- c("X","Y") ## renomaenado colunas
 
 matopiba_micro <- microregiao$geom[microregiao_filtro]
 matopiba_micro <- matopiba_micro[-15]
@@ -247,7 +246,292 @@ tab_oco2_sif_media %>%
 
 [medias_oco2_sif.xlsx](https://github.com/arpanosso/matopiba-xco2-sif/raw/master/data/medias_oco2_sif.xlsx)
 
-## Análise geoestatística
+## Juntando os diferentes usos do solo para a região
+
+``` r
+uso_solo_uni <-uso_solo %>% 
+  pivot_longer(LU_15:LU_19,names_to = "ano") %>% 
+  arrange(ano) %>% 
+  mutate(ano = as.numeric(str_remove(ano,"LU_"))+2000) %>% 
+  rename(longitude = lon,latitude = lat)
+uso_solo_uni %>% 
+  ggplot(aes(longitude, latitude, color=value)) +
+  geom_point() +
+  facet_wrap(~ano)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+``` r
+matopiba %>% 
+  ggplot() +
+  geom_sf(fill="white", color="black",
+                   size=.15, show.legend = FALSE)+
+  tema_mapa() +
+  geom_point(data=uso_solo_uni,
+                      ggplot2::aes(x=longitude,y=latitude,color=value)) +
+  facet_wrap(~ano)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+## Juntando as duas bases de dados
+
+``` r
+tab_oco2_sif_uso <- tab_oco2_sif_media %>%
+  group_by(longitude, latitude, ano) %>% 
+  summarise(
+    media_sif = mean(media_sif),
+    media_xco2 = mean(media_xco2)
+  ) %>% 
+  left_join(uso_solo_uni,c("longitude","latitude","ano")) %>% 
+  drop_na()
+
+tab_oco2_sif_media <- tab_oco2_sif_media %>%
+  left_join(uso_solo_uni,c("longitude","latitude","ano")) %>% 
+  drop_na()
+
+
+names(lst_dn) <- c("longitude", "latitude",  "ano", "mes",     "LST_d",     "LST_n" )
+
+tab_oco2_sif_media <- left_join(tab_oco2_sif_media, lst_dn,
+          c("longitude","latitude","ano","mes"))
+
+
+write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
+```
+
+## Faça o download da tabela de médias e usos do solo de 2015 a 2019
+
+[medias_oco2_sif.xlsx](https://github.com/arpanosso/matopiba-xco2-sif/raw/master/data/medias_oco2_sif_uso.xlsx)
+
+## Agora podemos fazer os gráficos
+
+``` r
+tab_oco2_sif_media  %>%  
+  group_by(value, ano, mes) %>%  
+  mutate(
+    media_xco2 = mean(media_xco2)
+  ) %>% 
+  ggplot(aes(x = mes_ano, y = media_xco2,
+                               color=value)) +
+  geom_line() +
+  theme_bw()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
+``` r
+tab_oco2_sif_media  %>%  
+  group_by(value, ano, mes) %>%  
+  mutate(
+    media_sif = mean(media_sif)
+  ) %>% 
+  ggplot(aes(x = mes_ano, y = media_sif,
+                               color=value)) +
+  geom_line() +
+  theme_bw()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+
+``` r
+tab_oco2_sif_media  %>%  
+  group_by(value, ano, mes) %>%  
+  mutate(
+    media_LST_d = mean(LST_d, na.rm=TRUE)
+  ) %>% 
+  ggplot(aes(x = mes_ano, y = media_LST_d,
+                               color=value)) +
+  geom_line() +
+  theme_bw()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
+``` r
+tab_oco2_sif_media  %>%  
+  group_by(value, ano, mes) %>%  
+  mutate(
+    media_LST_n = mean(LST_n,na.rm=TRUE)
+  ) %>% 
+  ggplot(aes(x = mes_ano, y = media_LST_n,
+                               color=value)) +
+  geom_line() +
+  theme_bw()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+
+## Correlação
+
+``` r
+land_uses <- tab_oco2_sif_media %>% pull(value) %>%  unique()
+
+for(i in seq_along(land_uses)){
+  print(land_uses[i])
+  mc <- tab_oco2_sif_media %>% ungroup() %>% 
+    filter(value==land_uses[i]) %>% 
+    select(media_sif, media_xco2, LST_d, LST_n) %>% 
+    drop_na() %>% 
+    cor()
+  corrplot::corrplot.mixed(mc,lower = "number",lower.col = "black")
+  
+}
+#> [1] "Agriculture"
+```
+
+![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+
+    #> [1] "Herbaceus Veg."
+
+![](README_files/figure-gfm/unnamed-chunk-19-2.png)<!-- -->
+
+    #> [1] "Shrubs"
+
+![](README_files/figure-gfm/unnamed-chunk-19-3.png)<!-- -->
+
+    #> [1] "Forest"
+
+![](README_files/figure-gfm/unnamed-chunk-19-4.png)<!-- -->
+
+``` r
+tab_oco2_sif_media %>% 
+  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
+  group_by(season, value, ano, mes) %>%  
+  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% 
+  ggscatter(
+    x = "media_sif", y = "media_xco2",
+    color = "value", palette = "jco",
+    add = "reg.line"
+  ) + coord_cartesian(ylim = c(382.5,392))+
+  facet_wrap(~value) +
+  stat_cor(label.y = 390) + 
+  stat_regline_equation(label.y = 391.2)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-20-1.png)<!-- --> \### Para
+periodo de seca
+
+``` r
+tab_oco2_sif_media %>% 
+  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
+  group_by(season, value, ano, mes) %>%  
+  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% 
+  filter(season == "dry") %>% 
+  ggscatter(
+    x = "media_sif", y = "media_xco2",
+    color = "value", palette = "jco",
+    add = "reg.line"
+  ) + coord_cartesian(ylim = c(382.5,392))+
+  facet_wrap(~value) +
+  stat_cor(label.y = 390) + 
+  stat_regline_equation(label.y = 391.2)+
+  labs(color = "Dry: value")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+
+### Para período úmido
+
+``` r
+tab_oco2_sif_media %>% 
+  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
+  group_by(season, value, ano, mes) %>%  
+  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% 
+  filter(season == "wet") %>% 
+  ggscatter(
+    x = "media_sif", y = "media_xco2",
+    color = "value", palette = "jco",
+    add = "reg.line"
+  ) + coord_cartesian(ylim = c(382.5,392)) +
+  facet_wrap(~value) +
+  stat_cor(label.y = 390) + 
+  stat_regline_equation(label.y = 391.2) +
+  labs(color = "Wet: value")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+## Motivação, quais pontos apresentaram alteração do uso do solo?
+
+``` r
+tab_oco2_sif_uso <- tab_oco2_sif_uso %>% ungroup()
+tab_oco2_sif_uso %>% 
+  group_by(longitude, latitude, value) %>% 
+  summarise(
+   n = n()
+  ) %>% 
+  filter(n<5) %>% 
+  ggplot(aes(x=longitude, y=latitude)) +
+  geom_point()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+
+Mapear os dados acima
+
+``` r
+matopiba %>% 
+  ggplot() +
+  geom_sf(fill="white", color="black",
+          size=.15, show.legend = FALSE)+
+  tema_mapa() +
+  geom_point(data=tab_oco2_sif_uso %>% 
+               group_by(longitude, latitude, value) %>% 
+               summarise(
+                 n = n()
+               ) %>% 
+               filter(n<5),
+             aes(x=longitude,y=latitude),color="red")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+
+Ideal é identificar no banco de dados quais são esses pontos, por meio
+da latitude e longitude
+
+``` r
+mudanca <- tab_oco2_sif_uso %>% 
+  group_by(longitude, latitude, value) %>% 
+  summarise(
+   n = n()
+  ) %>% 
+  filter(n<5) %>% 
+  count()
+tab_oco2_sif_media <- tab_oco2_sif_media %>% 
+  mutate(
+    mudança = 
+      longitude %in% mudanca$longitude &
+      latitude %in% mudanca$latitude
+  )
+#write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
+
+tab_oco2_sif_media  %>% ungroup() %>%
+  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
+  group_by(mudança, season, ano, mes) %>%  
+  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% 
+  ggscatter(
+    x = "media_sif", y = "media_xco2",
+    color = "mudança", palette = "jco",
+    add = "reg.line"
+  ) + coord_cartesian(ylim = c(382.5,392))+
+  facet_wrap(~mudança + season) +
+  stat_cor(label.y = 390) + 
+  stat_regline_equation(label.y = 391.2)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+
+# Análise geoestatística
 
 ### Criando o modelo de variabilidade espacial
 
@@ -268,14 +552,28 @@ dados_geo <- data_set  %>%  filter(SIF >= 0) %>%
     mes_ano = lubridate::make_date(ano, mes, 1)
   ) %>% 
   select(longitude, latitude, mes_ano, XCO2, SIF)
+
+dados_geo <- dados_geo %>% 
+  left_join(tab_oco2_sif_media,c("longitude","latitude","mes_ano")) %>% 
+  drop_na()
+
 dados_geo %>% glimpse()
-#> Rows: 7,137
-#> Columns: 5
-#> $ longitude <dbl> -45.5, -45.5, -45.5, -45.5, -45.5, -44.5, -44.5, -44.5, -44.~
-#> $ latitude  <dbl> -7.5, -6.5, -5.5, -4.5, -3.5, -12.5, -11.5, -10.5, -9.5, -8.~
-#> $ mes_ano   <date> 2014-09-01, 2014-09-01, 2014-09-01, 2014-09-01, 2014-09-01,~
-#> $ XCO2      <dbl> 386.7473, 384.4216, 389.8342, 388.0266, 381.5863, 386.5267, ~
-#> $ SIF       <dbl> 0.4928928, 0.2229115, 0.1562369, 0.7605132, 1.1376032, 1.519~
+#> Rows: 6,433
+#> Columns: 14
+#> $ longitude  <dbl> -50.5, -50.5, -50.5, -48.5, -48.5, -47.5, -47.5, -47.5, -47~
+#> $ latitude   <dbl> -12.5, -11.5, -10.5, -9.5, -8.5, -12.5, -11.5, -10.5, -9.5,~
+#> $ mes_ano    <date> 2015-01-01, 2015-01-01, 2015-01-01, 2015-01-01, 2015-01-01~
+#> $ XCO2       <dbl> 382.4614, 382.7462, 382.8724, 384.4948, 383.7093, 384.5950,~
+#> $ SIF        <dbl> 1.0275361, 0.8187736, 0.9326621, 0.8214164, 0.9543531, 1.17~
+#> $ região     <chr> "to", "to", "to", "to", "to", "to", "to", "to", "to", "pi",~
+#> $ ano        <dbl> 2015, 2015, 2015, 2015, 2015, 2015, 2015, 2015, 2015, 2015,~
+#> $ mes        <dbl> 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,~
+#> $ media_sif  <dbl> 1.0275361, 0.8187736, 0.9326621, 0.8214164, 0.9543531, 1.17~
+#> $ media_xco2 <dbl> 382.4614, 382.7462, 382.8724, 384.4948, 383.7093, 384.5950,~
+#> $ value      <chr> "Herbaceus Veg.", "Forest", "Herbaceus Veg.", "Forest", "Fo~
+#> $ LST_d      <dbl> 31.80200, 33.17500, 28.26221, 31.45272, 31.06999, 31.91999,~
+#> $ LST_n      <dbl> 24.72000, 24.54999, 24.92667, 24.46666, 23.55500, 23.98666,~
+#> $ mudança    <lgl> FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, ~
 ```
 
 Criando o grid de refinamento para a plotagem de pontos em locais não
@@ -294,21 +592,21 @@ gridded(grid) = ~ X + Y
 plot(grid)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 Vamos filtrar para uma data específica e criar
 
 ``` r
 lista_datas <- dados_geo$mes_ano %>% unique()
-data_especifica <- "2014-09-01"
+data_especifica <- "2015-03-01"
 df_aux <- dados_geo %>% filter(mes_ano == data_especifica) %>% 
   mutate(x = longitude, y=latitude) %>% 
-  select(x, y, XCO2) %>% 
+  select(x, y, LST_d) %>% 
   group_by(x,y) %>% 
-  summarise(XCO2 = mean(XCO2))
+  summarise(LST_d = mean(LST_d))
 coordinates(df_aux)= ~ x+y
 # form<-XCO2~1
-form<-XCO2~1
+form<-LST_d~1
 ```
 
 Verificando o Variograma experimental
@@ -324,7 +622,7 @@ m_vario <- fit.variogram(vario,
 
 ## validação Cruzada
 m <- vgm(1, "Sph", 10, 0)
-df_aux_g <- gstat(id=as.character(form)[2], formula = XCO2~1, data=df_aux)
+df_aux_g <- gstat(id=as.character(form)[2], formula = LST_d~1, data=df_aux)
 df_aux_g <- gstat(df_aux_g, model =  m, fill.all = TRUE)
 x <- variogram(df_aux_g, cutoff = 20)
 df_fit = fit.lmc(x, df_aux_g)
@@ -388,41 +686,8 @@ out = gstat.cv(df_fit, nmax = 40, verbose = FALSE)
 #> [using ordinary kriging]
 #> [using ordinary kriging]
 #> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
 out %>% as.tibble() %>% 
-  ggplot(aes(x=observed,XCO2.pred)) +
+  ggplot(aes(x=observed,LST_d.pred)) +
   geom_point() +
   geom_smooth(method = "lm") +
   ggpubr::stat_regline_equation(ggplot2::aes(
@@ -430,7 +695,7 @@ out %>% as.tibble() %>%
   theme_bw()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
 
 ``` r
 sqr.f1<-round(attr(m_vario, "SSErr"),4); c0<-round(m_vario$psill[[1]],4); c0_c1<-round(sum(m_vario$psill),4);a<-round(m_vario$range[[2]],2)
@@ -462,7 +727,7 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
     debug.level=-1,  
     )
 #> [using ordinary kriging]
-#>  87% done100% done
+#> 100% done
 ```
 
 Mapa de padrões espaciais.
@@ -483,7 +748,10 @@ krigagem <- tibble::as.tibble(ko_var) %>%
     plot_unit="km",
     height = ggplot2::unit(0.2,"cm"))
 ggsave(paste0("img/krig/",data_especifica,"_modelo.png"),krigagem)
+print(krigagem)
 ```
+
+![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 [Yamamoto,
 2007](https://link.springer.com/article/10.1007/s10596-007-9046-x)
@@ -525,7 +793,7 @@ krigagem_bt <- tibble::as.tibble(ko_var) %>%
 print(krigagem_bt)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
 ## Vamos criar um grid para testar todos os modelos
 
@@ -534,7 +802,7 @@ print(krigagem_bt)
 ``` r
 mypar<-expand.grid(dia_ = lista_datas, 
             modelo_ = c("Sph","Exp","Gau"),
-            variavel_ = c("XCO2", "SIF"))
+            variavel_ = c("LST_d", "LST_n"))
 ```
 
 ## Usando a `my_geo_stat` função para análise geoestatística
@@ -542,10 +810,10 @@ mypar<-expand.grid(dia_ = lista_datas,
 ``` r
 # my_geo_stat(df = dados_geo,
 #                       modelo = "Gau",
-#                         dia = "2014-09-01",
-#                         variavel="XCO2")
+#                         dia = "2015-01-01",
+#                         variavel="LST_d")
 # 
-# for(i in 1:nrow(mypar)){
+# for(i in 167:nrow(mypar)){
 #   my_geo_stat(df = dados_geo,
 #                         modelo = mypar$modelo_[i] %>% as.character(),
 #                         dia = mypar$dia_[i] %>% as.character(),
@@ -558,9 +826,9 @@ mypar<-expand.grid(dia_ = lista_datas,
 ## Após a seleção de modelos, vamos fazer todos as figuras novamente.
 
 ``` r
-#modelos <- read_excel("data/modelos.xlsx")
-
-# for(i in 61:nrow(modelos)){
+# modelos <- readxl::read_excel("data/modelos_LST_d.xlsx")
+# 
+# for(i in 1:nrow(modelos)){
 #   my_geo_stat(df = dados_geo,
 #                         modelo = modelos$modelo_[i] %>% as.character(),
 #                         dia = modelos$dia_[i] %>% as.character(),
@@ -569,288 +837,3 @@ mypar<-expand.grid(dia_ = lista_datas,
 #   print(paste0("---",i,"/",nrow(modelos),"----"))
 # }
 ```
-
-## Juntando os diferentes usos do solo para a região
-
-``` r
-uso_solo_uni <-uso_solo %>% 
-  pivot_longer(LU_15:LU_19,names_to = "ano") %>% 
-  arrange(ano) %>% 
-  mutate(ano = as.numeric(str_remove(ano,"LU_"))+2000) %>% 
-  rename(longitude = lon,latitude = lat)
-uso_solo_uni %>% 
-  ggplot(aes(longitude, latitude, color=value)) +
-  geom_point() +
-  facet_wrap(~ano)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
-
-``` r
-matopiba %>% 
-  ggplot() +
-  geom_sf(fill="white", color="black",
-                   size=.15, show.legend = FALSE)+
-  tema_mapa() +
-  geom_point(data=uso_solo_uni,
-                      ggplot2::aes(x=longitude,y=latitude,color=value)) +
-  facet_wrap(~ano)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
-
-## Juntando as duas bases de dados
-
-``` r
-tab_oco2_sif_uso <- tab_oco2_sif_media %>%
-  group_by(longitude, latitude, ano) %>% 
-  summarise(
-    media_sif = mean(media_sif),
-    media_xco2 = mean(media_xco2)
-  ) %>% 
-  left_join(uso_solo_uni,c("longitude","latitude","ano")) %>% 
-  drop_na()
-
-tab_oco2_sif_media <- tab_oco2_sif_media %>%
-  left_join(uso_solo_uni,c("longitude","latitude","ano")) %>% 
-  drop_na()
-
-
-names(lst_dn) <- c("longitude", "latitude",  "ano", "mes",     "LST_d",     "LST_n" )
-
-tab_oco2_sif_media <- left_join(tab_oco2_sif_media, lst_dn,
-          c("longitude","latitude","ano","mes"))
-
-
-write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
-```
-
-## Faça o download da tabela de médias e usos do solo de 2015 a 2019
-
-[medias_oco2_sif.xlsx](https://github.com/arpanosso/matopiba-xco2-sif/raw/master/data/medias_oco2_sif_uso.xlsx)
-
-## Agora podemos fazer os gráficos
-
-``` r
-tab_oco2_sif_media  %>%  
-  group_by(região, ano, mes) %>%  
-  mutate(
-    media_xco2 = mean(media_xco2)
-  ) %>% 
-  ggplot(aes(x = mes_ano, y = media_xco2,
-                               color=região)) +
-  geom_line() +
-  theme_bw()
-```
-
-![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
-
-``` r
-tab_oco2_sif_media  %>%  
-  group_by(região, ano, mes) %>%  
-  mutate(
-    media_sif = mean(media_sif)
-  ) %>% 
-  ggplot(aes(x = mes_ano, y = media_sif,
-                               color=região)) +
-  geom_line() +
-  theme_bw()
-```
-
-![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
-
-``` r
-tab_oco2_sif_media  %>%  
-  group_by(região, ano, mes) %>%  
-  mutate(
-    media_LST_d = mean(LST_d, na.rm=TRUE)
-  ) %>% 
-  ggplot(aes(x = mes_ano, y = media_LST_d,
-                               color=região)) +
-  geom_line() +
-  theme_bw()
-```
-
-![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
-
-``` r
-tab_oco2_sif_media  %>%  
-  group_by(região, ano, mes) %>%  
-  mutate(
-    media_LST_n = mean(LST_n,na.rm=TRUE)
-  ) %>% 
-  ggplot(aes(x = mes_ano, y = media_LST_n,
-                               color=região)) +
-  geom_line() +
-  theme_bw()
-```
-
-![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
-
-## Correlação
-
-``` r
-land_uses <- tab_oco2_sif_media %>% pull(value) %>%  unique()
-
-for(i in seq_along(land_uses)){
-  print(land_uses[i])
-  mc <- tab_oco2_sif_media %>% ungroup() %>% 
-    filter(value==land_uses[i]) %>% 
-    select(media_sif, media_xco2, LST_d, LST_n) %>% 
-    drop_na() %>% 
-    cor()
-  corrplot::corrplot.mixed(mc,lower = "number",lower.col = "black")
-  
-}
-#> [1] "Agriculture"
-```
-
-![](README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
-
-    #> [1] "Herbaceus Veg."
-
-![](README_files/figure-gfm/unnamed-chunk-30-2.png)<!-- -->
-
-    #> [1] "Shrubs"
-
-![](README_files/figure-gfm/unnamed-chunk-30-3.png)<!-- -->
-
-    #> [1] "Forest"
-
-![](README_files/figure-gfm/unnamed-chunk-30-4.png)<!-- -->
-
-``` r
-tab_oco2_sif_media %>% 
-  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
-  group_by(season, value, ano, mes) %>%  
-  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
-                   media_xco2 = mean(media_xco2, na.rm=TRUE)
-  ) %>% 
-  ggscatter(
-    x = "media_sif", y = "media_xco2",
-    color = "value", palette = "jco",
-    add = "reg.line"
-  ) + coord_cartesian(ylim = c(382.5,392))+
-  facet_wrap(~value) +
-  stat_cor(label.y = 390) + 
-  stat_regline_equation(label.y = 391.2)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- --> \### Para
-periodo de seca
-
-``` r
-tab_oco2_sif_media %>% 
-  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
-  group_by(season, value, ano, mes) %>%  
-  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
-                   media_xco2 = mean(media_xco2, na.rm=TRUE)
-  ) %>% 
-  filter(season == "dry") %>% 
-  ggscatter(
-    x = "media_sif", y = "media_xco2",
-    color = "value", palette = "jco",
-    add = "reg.line"
-  ) + coord_cartesian(ylim = c(382.5,392))+
-  facet_wrap(~value) +
-  stat_cor(label.y = 390) + 
-  stat_regline_equation(label.y = 391.2)+
-  labs(color = "Dry: value")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
-
-### Para período úmido
-
-``` r
-tab_oco2_sif_media %>% 
-  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
-  group_by(season, value, ano, mes) %>%  
-  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
-                   media_xco2 = mean(media_xco2, na.rm=TRUE)
-  ) %>% 
-  filter(season == "wet") %>% 
-  ggscatter(
-    x = "media_sif", y = "media_xco2",
-    color = "value", palette = "jco",
-    add = "reg.line"
-  ) + coord_cartesian(ylim = c(382.5,392)) +
-  facet_wrap(~value) +
-  stat_cor(label.y = 390) + 
-  stat_regline_equation(label.y = 391.2) +
-  labs(color = "Wet: value")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
-
-## Motivação, quais pontos apresentaram alteração do uso do solo?
-
-``` r
-tab_oco2_sif_uso <- tab_oco2_sif_uso %>% ungroup()
-tab_oco2_sif_uso %>% 
-  group_by(longitude, latitude, value) %>% 
-  summarise(
-   n = n()
-  ) %>% 
-  filter(n<5) %>% 
-  ggplot(aes(x=longitude, y=latitude)) +
-  geom_point()
-```
-
-![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
-
-Mapear os dados acima
-
-``` r
-matopiba %>% 
-  ggplot() +
-  geom_sf(fill="white", color="black",
-          size=.15, show.legend = FALSE)+
-  tema_mapa() +
-  geom_point(data=tab_oco2_sif_uso %>% 
-               group_by(longitude, latitude, value) %>% 
-               summarise(
-                 n = n()
-               ) %>% 
-               filter(n<5),
-             aes(x=longitude,y=latitude),color="red")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
-
-Ideal é identificar no banco de dados quais são esses pontos, por meio
-da latitude e longitude
-
-``` r
-mudanca <- tab_oco2_sif_uso %>% 
-  group_by(longitude, latitude, value) %>% 
-  summarise(
-   n = n()
-  ) %>% 
-  filter(n<5) %>% 
-  count()
-tab_oco2_sif_media <- tab_oco2_sif_media %>% 
-  mutate(
-    mudança = 
-      longitude %in% mudanca$longitude &
-      latitude %in% mudanca$latitude
-  )
-#write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
-
-tab_oco2_sif_media  %>% ungroup() %>%
-  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
-  group_by(mudança, season, ano, mes) %>%  
-  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
-                   media_xco2 = mean(media_xco2, na.rm=TRUE)
-  ) %>% 
-  ggscatter(
-    x = "media_sif", y = "media_xco2",
-    color = "mudança", palette = "jco",
-    add = "reg.line"
-  ) + coord_cartesian(ylim = c(382.5,392))+
-  facet_wrap(~mudança + season) +
-  stat_cor(label.y = 390) + 
-  stat_regline_equation(label.y = 391.2)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
