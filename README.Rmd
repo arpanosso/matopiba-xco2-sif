@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
 ## Pacotes exigidos
 
 ```{r}
+library(patchwork)
 library(tidyverse)
 library(writexl)
 library(ggpubr)
@@ -119,56 +120,6 @@ matopiba %>%
                       alpha=0.2)
 ```
 
-# Análise de série espaço-temporal
-
-## Gráfico de concentração de CO~2~
-```{r,message=FALSE, warning=FALSE, error= FALSE}
-data_set  %>%  
-    tidyr::pivot_longer(
-    dplyr::starts_with("flag"),
-    names_to = "região",
-    values_to = "flag"
-  ) %>% 
-  dplyr::filter(flag)  %>%  
-  dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
-  dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
-  # dplyr::filter(região == "matopiba") %>% 
-  dplyr::group_by(região, ano, mes) %>%  
-  dplyr::summarise(media_co2 = mean(XCO2, na.rm=TRUE)) %>% 
-    dplyr::mutate(
-    mes_ano = lubridate::make_date(ano, mes, 1)
-  )  %>%  
-  ggplot2::ggplot(ggplot2::aes(x = mes_ano, y = media_co2,
-                               color=região)) +
-  ggplot2::geom_line() +
-  ggplot2::theme_bw()
-```
-
-## Gráfico do SIF
-```{r,message=FALSE, warning=FALSE, error= FALSE}
-data_set  %>%  filter(SIF >= 0) %>% 
-    tidyr::pivot_longer(
-    dplyr::starts_with("flag"),
-    names_to = "região",
-    values_to = "flag"
-  ) %>% 
-  dplyr::filter(flag)  %>%  
-  dplyr::mutate(região = stringr::str_remove(região,"flag_"))  %>% 
-  dplyr::filter(região %in% c("ba","pi","to","ma")) %>% 
-  dplyr::group_by(região, ano, mes) %>%  
-  dplyr::summarise(media_sif = mean(SIF, na.rm=TRUE)) %>% 
-    dplyr::mutate(
-    mes_ano = lubridate::make_date(ano, mes, 1)
-  )  %>%  
-  ggplot2::ggplot(ggplot2::aes(x = mes_ano, y = media_sif,
-                               color=região)) +
-  ggplot2::geom_line() +
-  ggplot2::theme_bw()
-```
-## Gráfico do Temperatura da Superfício do Solo
-
-
-
 ## Tabela de médias de FCO2
 ```{r,message=FALSE, warning=FALSE, error= FALSE}
 tab_oco2_sif_media <- data_set  %>%  filter(SIF >= 0) %>% 
@@ -191,25 +142,6 @@ tab_oco2_sif_media <- data_set  %>%  filter(SIF >= 0) %>%
   )
 write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif.xlsx")
 ```
-
-## Gráficos de dispersão
-
-```{r}
-tab_oco2_sif_media %>% 
-  group_by(região, ano, mes) %>%  
-  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
-                   media_xco2 = mean(media_xco2, na.rm=TRUE)
-  ) %>% 
-  ggscatter(
-    x = "media_sif", y = "media_xco2",
-    color = "região", palette = "jco",
-    add = "reg.line"
-  ) + coord_cartesian(ylim = c(382.5,392))+
-  facet_wrap(~região) +
-  stat_cor(label.y = 390) + 
-  stat_regline_equation(label.y = 391.2)
-```
-
 
 ## Faça o download da tabela de médias
 
@@ -240,12 +172,14 @@ matopiba %>%
   tema_mapa() +
   geom_point(data=uso_solo_uni,
                       ggplot2::aes(x=longitude,y=latitude,color=value)) +
+    geom_polygon(data=poli_micro %>% as.tibble(),
+               aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+               size=1)
   facet_wrap(~ano)
 ```
 
 
 ## Juntando as duas bases de dados
-
 
 ```{r}
 tab_oco2_sif_uso <- tab_oco2_sif_media %>%
@@ -261,13 +195,16 @@ tab_oco2_sif_media <- tab_oco2_sif_media %>%
   left_join(uso_solo_uni,c("longitude","latitude","ano")) %>% 
   drop_na()
 
-
-names(lst_dn) <- c("longitude", "latitude",  "ano", "mes",     "LST_d",     "LST_n" )
+names(lst_dn) <- c("longitude","latitude","ano","mes","LST_d","LST_n" )
 
 tab_oco2_sif_media <- left_join(tab_oco2_sif_media, lst_dn,
           c("longitude","latitude","ano","mes"))
 
-
+tab_oco2_sif_media <- tab_oco2_sif_media %>% 
+  mutate(
+    Amp_T = LST_d - LST_n
+  )
+  
 write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
 ```
 
@@ -276,10 +213,15 @@ write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
 [medias_oco2_sif.xlsx](https://github.com/arpanosso/matopiba-xco2-sif/raw/master/data/medias_oco2_sif_uso.xlsx)
 
 
-## Agora podemos fazer os gráficos
+# RESULTADOS - variabilidade  temporal
+
 
 ```{r}
 tab_oco2_sif_media  %>%  
+  mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>% 
   group_by(value, ano, mes) %>%  
   mutate(
     media_xco2 = mean(media_xco2)
@@ -292,6 +234,10 @@ tab_oco2_sif_media  %>%
 
 ```{r}
 tab_oco2_sif_media  %>%  
+    mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>% 
   group_by(value, ano, mes) %>%  
   mutate(
     media_sif = mean(media_sif)
@@ -301,10 +247,28 @@ tab_oco2_sif_media  %>%
   geom_line() +
   theme_bw()
 ```
-
+```{r}
+tab_oco2_sif_media  %>%  
+    mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>% 
+  group_by(value, ano, mes) %>%  
+  mutate(
+    media_Amp_T = mean(Amp_T, na.rm=TRUE)
+  ) %>% 
+  ggplot(aes(x = mes_ano, y = media_Amp_T,
+                               color=value)) +
+  geom_line() +
+  theme_bw()
+```
 
 ```{r}
 tab_oco2_sif_media  %>%  
+    mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>% 
   group_by(value, ano, mes) %>%  
   mutate(
     media_LST_d = mean(LST_d, na.rm=TRUE)
@@ -317,6 +281,10 @@ tab_oco2_sif_media  %>%
 
 ```{r}
 tab_oco2_sif_media  %>%  
+    mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>% 
   group_by(value, ano, mes) %>%  
   mutate(
     media_LST_n = mean(LST_n,na.rm=TRUE)
@@ -336,24 +304,65 @@ land_uses <- tab_oco2_sif_media %>% pull(value) %>%  unique()
 for(i in seq_along(land_uses)){
   print(land_uses[i])
   mc <- tab_oco2_sif_media %>% ungroup() %>% 
+      mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>% 
     filter(value==land_uses[i]) %>% 
-    select(media_sif, media_xco2, LST_d, LST_n) %>% 
+    select(media_sif, media_xco2, Amp_T, LST_d, LST_n) %>% 
     drop_na() %>% 
     cor()
   corrplot::corrplot.mixed(mc,lower = "number",lower.col = "black")
-  
 }
 ```
 
 
+```{r}
+sc_sif <- tab_oco2_sif_media %>% 
+  mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>% 
+  summarise(media_sif = mean(media_sif, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% filter(media_sif <= 2.5, media_xco2 <= 392.5 & media_xco2>=377.5) %>% 
+  ggscatter(
+    x = "media_sif", y = "media_xco2",
+    add = "reg.line"
+  ) + # coord_cartesian(ylim = c(382.5,392))+
+  stat_cor(label.y = 395, label.x = .5) + 
+  stat_regline_equation(label.y = 396.2, label.x = .5)+
+  labs()
+
+sc_amp <- tab_oco2_sif_media %>% 
+  mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>% 
+  summarise(media_Amp_T = mean(Amp_T, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% filter(media_xco2 <= 392.5 & media_xco2>=377.5) %>%
+  ggscatter(
+    x = "media_Amp_T", y = "media_xco2",
+    add = "reg.line", color="red"
+  ) + # coord_cartesian(ylim = c(382.5,392))+
+  stat_cor(label.y = 395, label.x = 2) + 
+  stat_regline_equation(label.y = 396.2, label.x = 2) +
+  labs(y="")
+
+sc_sif | sc_amp
+```
 
 ```{r}
 tab_oco2_sif_media %>% 
-  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
-  group_by(season, value, ano, mes) %>%  
-  dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
-                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
   ) %>% 
+  filter(flag_matopiba) %>%
+  group_by(value, ano, mes) %>%  
+  summarise(media_sif = mean(media_sif, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% filter(media_sif <= 2.5, media_xco2 <= 392.5 & media_xco2>=377.5) %>% 
   ggscatter(
     x = "media_sif", y = "media_xco2",
     color = "value", palette = "jco",
@@ -363,18 +372,66 @@ tab_oco2_sif_media %>%
   stat_cor(label.y = 390) + 
   stat_regline_equation(label.y = 391.2)
 ```
-### Para periodo de seca
+```{r}
+tab_oco2_sif_media %>% 
+  mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>%
+  group_by(value, ano, mes) %>%  
+  summarise(media_Amp_T = mean(Amp_T, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% filter(media_xco2 <= 392.5 & media_xco2>=377.5) %>% 
+  ggscatter(
+    x = "media_Amp_T", y = "media_xco2",
+    color = "value", palette = "jco",
+    add = "reg.line"
+  ) + coord_cartesian(ylim = c(382.5,392))+
+  facet_wrap(~value) +
+  stat_cor(label.y = 390) + 
+  stat_regline_equation(label.y = 391.2)
+```
+
+### Para período de seca
 
 ```{r}
 tab_oco2_sif_media %>% 
+  mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>%
   mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
   group_by(season, value, ano, mes) %>%  
   dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
                    media_xco2 = mean(media_xco2, na.rm=TRUE)
-  ) %>% 
+  ) %>% filter(media_sif <= 2.5, media_xco2 <= 392.5 & media_xco2>=377.5) %>% 
   filter(season == "dry") %>% 
   ggscatter(
     x = "media_sif", y = "media_xco2",
+    color = "value", palette = "jco",
+    add = "reg.line"
+  ) + coord_cartesian(ylim = c(382.5,392))+
+  facet_wrap(~value) +
+  stat_cor(label.y = 390) + 
+  stat_regline_equation(label.y = 391.2)+
+  labs(color = "Dry: value")
+```
+
+
+```{r}
+tab_oco2_sif_media %>% 
+  mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>%
+  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
+  group_by(season, value, ano, mes) %>%  
+  dplyr::summarise(media_Amp_T = mean(Amp_T, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% filter(media_xco2 <= 392.5 & media_xco2>=377.5) %>% 
+  filter(season == "dry") %>% 
+  ggscatter(
+    x = "media_Amp_T", y = "media_xco2",
     color = "value", palette = "jco",
     add = "reg.line"
   ) + coord_cartesian(ylim = c(382.5,392))+
@@ -388,6 +445,10 @@ tab_oco2_sif_media %>%
 
 ```{r}
 tab_oco2_sif_media %>% 
+  mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>%
   mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
   group_by(season, value, ano, mes) %>%  
   dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
@@ -404,7 +465,28 @@ tab_oco2_sif_media %>%
   stat_regline_equation(label.y = 391.2) +
   labs(color = "Wet: value")
 ```
-
+```{r}
+tab_oco2_sif_media %>% 
+  mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>%
+  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
+  group_by(season, value, ano, mes) %>%  
+  dplyr::summarise(media_Amp_T = mean(Amp_T, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% filter(media_xco2 <= 392.5 & media_xco2>=377.5) %>% 
+  filter(season == "wet") %>% 
+  ggscatter(
+    x = "media_Amp_T", y = "media_xco2",
+    color = "value", palette = "jco",
+    add = "reg.line"
+  ) + coord_cartesian(ylim = c(382.5,392))+
+  facet_wrap(~value) +
+  stat_cor(label.y = 390) + 
+  stat_regline_equation(label.y = 391.2)+
+  labs(color = "Wet: value")
+```
 ## Motivação, quais pontos apresentaram alteração do uso do solo?
 
 ```{r}
@@ -440,6 +522,10 @@ Ideal é identificar no banco de dados quais são esses pontos, por meio da lati
 
 ```{r, message=FALSE, error=FALSE, warning=FALSE}
 mudanca <- tab_oco2_sif_uso %>% 
+  mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>%
   group_by(longitude, latitude, value) %>% 
   summarise(
    n = n()
@@ -455,6 +541,10 @@ tab_oco2_sif_media <- tab_oco2_sif_media %>%
 #write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
 
 tab_oco2_sif_media  %>% ungroup() %>%
+  mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>%
   mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
   group_by(mudança, season, ano, mes) %>%  
   dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
@@ -471,9 +561,8 @@ tab_oco2_sif_media  %>% ungroup() %>%
 ```
 
 
-# Análise geoestatística
+# RESULTADOS - Variabilidade espacial 
 
-### Criando o modelo de variabilidade espacial
 
 Inicialmente, devemos criar o banco de dados com as amostras para a geoestatística espaço-temporal.
 
@@ -659,9 +748,9 @@ print(krigagem_bt)
 https://gis.stackexchange.com/questions/237574/backtransformation-of-kriging-predictions-and-variances
 
 ```{r}
-mypar<-expand.grid(dia_ = lista_datas, 
-            modelo_ = c("Sph","Exp","Gau"),
-            variavel_ = c("LST_d", "LST_n"))
+# mypar<-expand.grid(dia_ = lista_datas, 
+#             modelo_ = c("Sph","Exp","Gau"),
+#             variavel_ = c("LST_d", "LST_n"))
 ```
 
 ## Usando a `my_geo_stat` função para análise geoestatística
@@ -685,8 +774,13 @@ mypar<-expand.grid(dia_ = lista_datas,
 ## Após a seleção de modelos, vamos fazer todos as figuras novamente.
 
 ```{r}
-# modelos <- readxl::read_excel("data/modelos_LST_d.xlsx")
-# 
+modelos <- readxl::read_excel("data/modelos.xlsx")
+# modelos <- modelos %>% 
+#   mutate(
+#     V1 = as.Date(V1)
+#   )
+# names(modelos) <- c("dia_","modelo_")
+# modelos$variavel_ <- "LST_n"
 # for(i in 1:nrow(modelos)){
 #   my_geo_stat(df = dados_geo,
 #                         modelo = modelos$modelo_[i] %>% as.character(),
@@ -696,5 +790,7 @@ mypar<-expand.grid(dia_ = lista_datas,
 #   print(paste0("---",i,"/",nrow(modelos),"----"))
 # }
 ```
+
+
 
 

@@ -30,10 +30,16 @@ st_crs(matopiba_shp)
 st_bbox(matopiba_shp)
 
 
+modelos_n <- list.files("C:\\Dropbox\\LST_n") %>% stringr::str_split(pattern = "_",
+                                                        simplify = TRUE)
 
+modelos_n <- as.data.frame(modelos_n[,3:4])
+modelos_n <- modelos_n %>%
+  mutate(
+    V2 = str_remove(V2,".png")
+  )
 
-
-
+writexl::write_xlsx(modelos_n,"data/modelos_n.xlsx")
 
 
 
