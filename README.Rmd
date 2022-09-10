@@ -294,9 +294,23 @@ tab_oco2_sif_media  %>%
   geom_line() +
   theme_bw()
 ```
-
-
 ## Correlação
+
+```{r}
+mc <- tab_oco2_sif_media %>% ungroup() %>% 
+  mutate(
+    flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>% 
+  select(media_sif, media_xco2, Amp_T, LST_d, LST_n) %>% 
+  drop_na() %>% 
+  cor()
+corrplot::corrplot.mixed(mc,upper = "ellipse",lower = "number",lower.col = "black")
+
+```
+
+
+## Correlação por uso
 
 ```{r}
 land_uses <- tab_oco2_sif_media %>% pull(value) %>%  unique()
@@ -515,7 +529,10 @@ matopiba %>%
                  n = n()
                ) %>% 
                filter(n<5),
-             aes(x=longitude,y=latitude),color="red")
+             aes(x=longitude,y=latitude),color="red")+
+      geom_polygon(data=poli_micro %>% as.tibble(),
+               aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+               size=1)
 ```
 
 Ideal é identificar no banco de dados quais são esses pontos, por meio da latitude e longitude
@@ -546,7 +563,7 @@ tab_oco2_sif_media  %>% ungroup() %>%
   ) %>% 
   filter(flag_matopiba) %>%
   mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
-  group_by(mudança, season, ano, mes) %>%  
+  group_by(mudança, ano, mes) %>%  
   dplyr::summarise(media_sif = mean(media_sif, na.rm=TRUE),
                    media_xco2 = mean(media_xco2, na.rm=TRUE)
   ) %>% 
@@ -555,10 +572,63 @@ tab_oco2_sif_media  %>% ungroup() %>%
     color = "mudança", palette = "jco",
     add = "reg.line"
   ) + coord_cartesian(ylim = c(382.5,392))+
-  facet_wrap(~mudança + season) +
+  facet_wrap(~mudança ) +
   stat_cor(label.y = 390) + 
   stat_regline_equation(label.y = 391.2)
 ```
+
+
+```{r, message=FALSE, error=FALSE, warning=FALSE}
+tab_oco2_sif_media  %>% ungroup() %>%
+  mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>%
+  mutate(season = ifelse(mes >= 5 & mes <= 10, "dry","wet")) %>% 
+  group_by(mudança, ano, mes) %>%  
+  dplyr::summarise(media_Amp_T = mean(Amp_T, na.rm=TRUE),
+                   media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% 
+  ggscatter(
+    x = "media_Amp_T", y = "media_xco2",
+    color = "mudança", palette = "jco",
+    add = "reg.line"
+  ) + coord_cartesian(ylim = c(382.5,392))+
+  facet_wrap(~mudança) +
+  stat_cor(label.y = 390) + 
+  stat_regline_equation(label.y = 391.2)
+
+```
+
+
+### Tabela de estatística descritiva
+
+```{r}
+data_set_aux <- tab_oco2_sif_media  %>% ungroup() #%>% 
+  #   mutate(
+  #       flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  # ) %>% 
+  # filter(flag_matopiba) 
+
+datas <- data_set_aux %>% pull(mes_ano) %>% unique()
+usos <-  data_set_aux %>% pull(value) %>% unique()
+
+for(i in 2015:2019){
+  for(j in seq_along(usos)){
+   daux <-  data_set_aux %>% 
+      filter(ano == i, value == usos[j]) %>% 
+      select(media_xco2,media_sif,Amp_T,LST_d, LST_n)
+    d_aux <- apply(daux,2,est_descritiva)
+    d_aux <- as.data.frame(d_aux)
+    d_aux$ano <- i; d_aux$uso <- usos[j]; d_aux$medida <- row.names(d_aux)
+    if(i == 2015 & j == 1) d_final <- d_aux
+    else d_final <- rbind(d_final,d_aux)
+  }
+}
+d_final
+# write_xlsx(d_final,"data/estatistica_descritiva.xlsx")
+```
+
 
 
 # RESULTADOS - Variabilidade espacial 
@@ -603,9 +673,6 @@ grid <- expand.grid(X=seq(min(minX_pol),max(maxX_pol),dis), Y=seq(min(minY_pol),
 gridded(grid) = ~ X + Y
 plot(grid)
 ```
-
-
-
 Vamos filtrar para uma data específica e criar
 
 ```{r}
@@ -748,20 +815,20 @@ print(krigagem_bt)
 https://gis.stackexchange.com/questions/237574/backtransformation-of-kriging-predictions-and-variances
 
 ```{r}
-# mypar<-expand.grid(dia_ = lista_datas, 
-#             modelo_ = c("Sph","Exp","Gau"),
-#             variavel_ = c("LST_d", "LST_n"))
+mypar<-expand.grid(dia_ = lista_datas, 
+             modelo_ = c("Sph","Exp","Gau"),
+             variavel_ = c("Amp_T"))
 ```
 
 ## Usando a `my_geo_stat` função para análise geoestatística
 
 ```{r}
 # my_geo_stat(df = dados_geo,
-#                       modelo = "Gau",
-#                         dia = "2015-01-01",
-#                         variavel="LST_d")
+#                        modelo = "Gau",
+#                          dia = "2015-01-01",
+#                          variavel="Amp_T")
 # 
-# for(i in 167:nrow(mypar)){
+# for(i in 1:nrow(mypar)){
 #   my_geo_stat(df = dados_geo,
 #                         modelo = mypar$modelo_[i] %>% as.character(),
 #                         dia = mypar$dia_[i] %>% as.character(),
@@ -791,6 +858,61 @@ modelos <- readxl::read_excel("data/modelos.xlsx")
 # }
 ```
 
+
+```{r}
+for(i in 1:nrow(modelos)){
+  z <- modelos$variavel_[i]
+  df_aux <- dados_geo %>% filter(mes_ano == modelos$dia_[i]) %>% 
+    mutate(x = longitude, y=latitude) %>% 
+    select(x, y, z)
+  names(df_aux) <- c("x","y","z")
+  df_aux <- df_aux %>% 
+    group_by(x,y) %>% 
+    summarise(z = mean(z,na.rm=TRUE))
+  coordinates(df_aux)= ~ x+y
+  vario <- variogram(z ~ 1, data=df_aux, cutoff=20, width=1.5,cressie=FALSE)
+  m_vario <- fit.variogram(vario,
+                           fit.method = 7,
+                           vgm(1, modelos$modelo_[i], 10, 0))
+  ko_var<-krige(formula=z ~1, df_aux, grid, model=m_vario, 
+                block=c(0,0),
+                nsim=0,
+                na.action=na.pass,
+                debug.level=-1,  
+  )
+  if(i == 1) {
+    ko_final <- ko_var %>% as.tibble() %>% select(X,Y,var1.pred)
+    names(ko_final) <- c("X","Y",
+                         paste0(modelos$dia_[i],"_",z))
+  } else {
+    ko_aux <- ko_var %>% as.tibble() %>% select(var1.pred)
+    names(ko_aux) <- paste0(modelos$dia_[i],"_",z)
+    ko_final <- cbind(ko_final,ko_aux)
+  }
+}
+```
+
+
+```{r}
+ko_final <- ko_final %>% 
+  mutate(
+    flag = def_pol(X,Y,poli_micro)
+  ) %>% 
+  filter(flag)
+```
+
+
+```{r}
+for(i in 1:length(datas)){
+  print(datas[i])
+  ko_aux <- ko_final %>% 
+    select(starts_with(as.character(datas[i])))
+  names(ko_aux) <- str_remove(names(ko_aux),paste0(as.character(datas[i]),"_"))
+  ko_aux %>% 
+    cor() %>% 
+    corrplot::corrplot.mixed(upper = "ellipse", lower = "number",lower.col = "black")
+}
+```
 
 
 

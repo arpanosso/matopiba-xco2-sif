@@ -20,6 +20,7 @@ meu_erro_padrao <- function(x){
 est_descritiva <- function(x){
   n <- length(x)
   n_na <- sum(is.na(x)) # <<<<<<<------------
+  x<- na.omit(x)
   m <- mean(x)
   dp <- sd(x)
   md <- median(x) # quantile(x, 0.50)

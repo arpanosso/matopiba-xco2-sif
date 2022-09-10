@@ -30,16 +30,16 @@ st_crs(matopiba_shp)
 st_bbox(matopiba_shp)
 
 
-modelos_n <- list.files("C:\\Dropbox\\LST_n") %>% stringr::str_split(pattern = "_",
+modelos_amp <- list.files("img\\validacao_cruzada") %>% stringr::str_split(pattern = "_",
                                                         simplify = TRUE)
 
-modelos_n <- as.data.frame(modelos_n[,3:4])
-modelos_n <- modelos_n %>%
+modelos_amp <- as.data.frame(modelos_amp[,3:4])
+modelos_amp <- modelos_amp %>%
   mutate(
     V2 = str_remove(V2,".png")
   )
 
-writexl::write_xlsx(modelos_n,"data/modelos_n.xlsx")
+writexl::write_xlsx(modelos_amp,"data/modelos_amp.xlsx")
 
 
 
