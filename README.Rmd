@@ -817,7 +817,7 @@ https://gis.stackexchange.com/questions/237574/backtransformation-of-kriging-pre
 ```{r}
 mypar<-expand.grid(dia_ = lista_datas, 
              modelo_ = c("Sph","Exp","Gau"),
-             variavel_ = c("Amp_T"))
+             variavel_ = c("XCO2","SIF","Amp_T"))
 ```
 
 ## Usando a `my_geo_stat` função para análise geoestatística
@@ -827,7 +827,7 @@ mypar<-expand.grid(dia_ = lista_datas,
 #                        modelo = "Gau",
 #                          dia = "2015-01-01",
 #                          variavel="Amp_T")
-# 
+# # 
 # for(i in 1:nrow(mypar)){
 #   my_geo_stat(df = dados_geo,
 #                         modelo = mypar$modelo_[i] %>% as.character(),
@@ -842,6 +842,7 @@ mypar<-expand.grid(dia_ = lista_datas,
 
 ```{r}
 modelos <- readxl::read_excel("data/modelos.xlsx")
+ko_final <- readxl::read_excel("data/ko_todos.xlsx")
 # modelos <- modelos %>% 
 #   mutate(
 #     V1 = as.Date(V1)
@@ -860,45 +861,45 @@ modelos <- readxl::read_excel("data/modelos.xlsx")
 
 
 ```{r}
-for(i in 1:nrow(modelos)){
-  z <- modelos$variavel_[i]
-  df_aux <- dados_geo %>% filter(mes_ano == modelos$dia_[i]) %>% 
-    mutate(x = longitude, y=latitude) %>% 
-    select(x, y, z)
-  names(df_aux) <- c("x","y","z")
-  df_aux <- df_aux %>% 
-    group_by(x,y) %>% 
-    summarise(z = mean(z,na.rm=TRUE))
-  coordinates(df_aux)= ~ x+y
-  vario <- variogram(z ~ 1, data=df_aux, cutoff=20, width=1.5,cressie=FALSE)
-  m_vario <- fit.variogram(vario,
-                           fit.method = 7,
-                           vgm(1, modelos$modelo_[i], 10, 0))
-  ko_var<-krige(formula=z ~1, df_aux, grid, model=m_vario, 
-                block=c(0,0),
-                nsim=0,
-                na.action=na.pass,
-                debug.level=-1,  
-  )
-  if(i == 1) {
-    ko_final <- ko_var %>% as.tibble() %>% select(X,Y,var1.pred)
-    names(ko_final) <- c("X","Y",
-                         paste0(modelos$dia_[i],"_",z))
-  } else {
-    ko_aux <- ko_var %>% as.tibble() %>% select(var1.pred)
-    names(ko_aux) <- paste0(modelos$dia_[i],"_",z)
-    ko_final <- cbind(ko_final,ko_aux)
-  }
-}
+# for(i in 1:nrow(modelos)){
+#   z <- modelos$variavel_[i]
+#   df_aux <- dados_geo %>% filter(mes_ano == modelos$dia_[i]) %>% 
+#     mutate(x = longitude, y=latitude) %>% 
+#     select(x, y, z)
+#   names(df_aux) <- c("x","y","z")
+#   df_aux <- df_aux %>% 
+#     group_by(x,y) %>% 
+#     summarise(z = mean(z,na.rm=TRUE))
+#   coordinates(df_aux)= ~ x+y
+#   vario <- variogram(z ~ 1, data=df_aux, cutoff=20, width=1.5,cressie=FALSE)
+#   m_vario <- fit.variogram(vario,
+#                            fit.method = 7,
+#                            vgm(1, modelos$modelo_[i], 10, 0))
+#   ko_var<-krige(formula=z ~1, df_aux, grid, model=m_vario, 
+#                 block=c(0,0),
+#                 nsim=0,
+#                 na.action=na.pass,
+#                 debug.level=-1,  
+#   )
+#   if(i == 1) {
+#     ko_final <- ko_var %>% as.tibble() %>% select(X,Y,var1.pred)
+#     names(ko_final) <- c("X","Y",
+#                          paste0(modelos$dia_[i],"_",z))
+#   } else {
+#     ko_aux <- ko_var %>% as.tibble() %>% select(var1.pred)
+#     names(ko_aux) <- paste0(modelos$dia_[i],"_",z)
+#     ko_final <- cbind(ko_final,ko_aux)
+#   }
+# }
 ```
 
 
 ```{r}
-ko_final <- ko_final %>% 
-  mutate(
-    flag = def_pol(X,Y,poli_micro)
-  ) %>% 
-  filter(flag)
+# ko_final <- ko_final %>% 
+#   mutate(
+#     flag = def_pol(X,Y,poli_micro)
+#   ) %>% 
+#   filter(flag)
 ```
 
 
