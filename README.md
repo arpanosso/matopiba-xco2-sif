@@ -1514,7 +1514,7 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
     debug.level=-1,  
     )
 #> [using ordinary kriging]
-#> 100% done
+#>  23% done100% done
 ```
 
 Mapa de padrões espaciais.
@@ -1673,248 +1673,209 @@ ko_final <- readxl::read_excel("data/ko_todos.xlsx")
 ```
 
 ``` r
-for(i in 1:length(datas)){
-  print(datas[i])
-  ko_aux <- ko_final %>% 
-    select(starts_with(as.character(datas[i])))
-  names(ko_aux) <- str_remove(names(ko_aux),paste0(as.character(datas[i]),"_"))
-  ko_aux %>% 
-    cor() %>% 
-    corrplot::corrplot.mixed(upper = "ellipse", lower = "number",lower.col = "black")
-}
-#> [1] "2015-01-01"
+# for(i in 1:length(datas)){
+#   print(datas[i])
+#   ko_aux <- ko_final %>% 
+#     select(starts_with(as.character(datas[i])))
+#   names(ko_aux) <- str_remove(names(ko_aux),paste0(as.character(datas[i]),"_"))
+#   ko_aux %>% 
+#     cor() %>% 
+#     corrplot::corrplot.mixed(upper = "ellipse", lower = "number",lower.col = "black")
+# }
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
-
-    #> [1] "2015-02-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-2.png)<!-- -->
-
-    #> [1] "2015-03-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-3.png)<!-- -->
-
-    #> [1] "2015-04-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-4.png)<!-- -->
-
-    #> [1] "2015-05-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-5.png)<!-- -->
-
-    #> [1] "2015-06-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-6.png)<!-- -->
-
-    #> [1] "2015-07-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-7.png)<!-- -->
-
-    #> [1] "2015-08-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-8.png)<!-- -->
-
-    #> [1] "2015-09-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-9.png)<!-- -->
-
-    #> [1] "2015-10-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-10.png)<!-- -->
-
-    #> [1] "2015-11-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-11.png)<!-- -->
-
-    #> [1] "2015-12-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-12.png)<!-- -->
-
-    #> [1] "2016-01-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-13.png)<!-- -->
-
-    #> [1] "2016-02-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-14.png)<!-- -->
-
-    #> [1] "2016-03-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-15.png)<!-- -->
-
-    #> [1] "2016-04-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-16.png)<!-- -->
-
-    #> [1] "2016-05-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-17.png)<!-- -->
-
-    #> [1] "2016-06-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-18.png)<!-- -->
-
-    #> [1] "2016-07-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-19.png)<!-- -->
-
-    #> [1] "2016-08-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-20.png)<!-- -->
-
-    #> [1] "2016-09-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-21.png)<!-- -->
-
-    #> [1] "2016-10-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-22.png)<!-- -->
-
-    #> [1] "2016-11-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-23.png)<!-- -->
-
-    #> [1] "2016-12-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-24.png)<!-- -->
-
-    #> [1] "2017-01-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-25.png)<!-- -->
-
-    #> [1] "2017-02-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-26.png)<!-- -->
-
-    #> [1] "2017-03-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-27.png)<!-- -->
-
-    #> [1] "2017-04-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-28.png)<!-- -->
-
-    #> [1] "2017-05-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-29.png)<!-- -->
-
-    #> [1] "2017-06-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-30.png)<!-- -->
-
-    #> [1] "2017-07-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-31.png)<!-- -->
-
-    #> [1] "2017-09-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-32.png)<!-- -->
-
-    #> [1] "2017-10-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-33.png)<!-- -->
-
-    #> [1] "2017-11-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-34.png)<!-- -->
-
-    #> [1] "2017-12-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-35.png)<!-- -->
-
-    #> [1] "2018-01-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-36.png)<!-- -->
-
-    #> [1] "2018-02-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-37.png)<!-- -->
-
-    #> [1] "2018-03-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-38.png)<!-- -->
-
-    #> [1] "2018-04-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-39.png)<!-- -->
-
-    #> [1] "2018-05-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-40.png)<!-- -->
-
-    #> [1] "2018-06-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-41.png)<!-- -->
-
-    #> [1] "2018-07-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-42.png)<!-- -->
-
-    #> [1] "2018-08-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-43.png)<!-- -->
-
-    #> [1] "2018-09-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-44.png)<!-- -->
-
-    #> [1] "2018-10-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-45.png)<!-- -->
-
-    #> [1] "2018-11-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-46.png)<!-- -->
-
-    #> [1] "2018-12-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-47.png)<!-- -->
-
-    #> [1] "2019-01-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-48.png)<!-- -->
-
-    #> [1] "2019-02-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-49.png)<!-- -->
-
-    #> [1] "2019-03-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-50.png)<!-- -->
-
-    #> [1] "2019-04-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-51.png)<!-- -->
-
-    #> [1] "2019-05-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-52.png)<!-- -->
-
-    #> [1] "2019-06-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-53.png)<!-- -->
-
-    #> [1] "2019-07-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-54.png)<!-- -->
-
-    #> [1] "2019-08-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-55.png)<!-- -->
-
-    #> [1] "2019-09-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-56.png)<!-- -->
-
-    #> [1] "2019-10-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-57.png)<!-- -->
-
-    #> [1] "2019-11-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-58.png)<!-- -->
-
-    #> [1] "2019-12-01"
-
-![](README_files/figure-gfm/unnamed-chunk-44-59.png)<!-- -->
+## Mapas Seco Chuvoso
+
+``` r
+ko_dw <- readxl::read_excel("data/ko_todos_secochuvoso.xlsx") %>% 
+  select(X,Y,ends_with("wet"),ends_with("dry"))
+```
+
+``` r
+kw <- matopiba %>%
+  ggplot2::ggplot() +
+  ggplot2::geom_sf(fill="white", color="black",
+          size=.15, show.legend = FALSE) +
+  tema_mapa() +
+  geom_tile(data=ko_dw, aes(X,Y,fill= `2019_XCO2_wet`) ) +
+  scale_fill_viridis_c()+
+  # scale_fill_gradient(low = "yellow", high = "blue",breaks=breaks ) +
+    geom_polygon(data=poli_micro %>% as.tibble(),
+               aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+               size=1)+
+  labs(fill="",x="Longitude",y="") +
+    ggtitle('Wet') +
+  theme(plot.title = element_text(hjust = 0.5))
+
+kd <- matopiba %>%
+  ggplot2::ggplot() +
+  ggplot2::geom_sf(fill="white", color="black",
+          size=.15, show.legend = FALSE) +
+  tema_mapa() +
+  geom_tile(data=ko_dw, aes(X,Y,fill= `2019_XCO2_dry`) ) +
+  scale_fill_viridis_c()+
+  # scale_fill_gradient(low = "yellow", high = "blue",breaks=breaks) +
+    geom_polygon(data=poli_micro %>% as.tibble(),
+               aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+               size=1)+
+  labs(fill="",x="Longitude",y="Latitude") +
+    ggtitle('Dry')+
+  theme(plot.title = element_text(hjust = 0.5))
+
+patchwork  <- kd | kw
+patchwork + plot_annotation(
+  title = 'XCO2 (ppm)',
+  subtitle = '2019',
+  theme = theme(plot.title = element_text(hjust = 0.5),
+                plot.subtitle = element_text(hjust = 0.5)),
+  
+)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
+
+``` r
+kw <- matopiba %>%
+  ggplot2::ggplot() +
+  ggplot2::geom_sf(fill="white", color="black",
+          size=.15, show.legend = FALSE) +
+  tema_mapa() +
+  geom_tile(data=ko_dw, aes(X,Y,fill= `2015_SIF_wet`) ) +
+  scale_fill_viridis_c()+
+  # scale_fill_gradient(low = "yellow", high = "blue",breaks=breaks ) +
+    geom_polygon(data=poli_micro %>% as.tibble(),
+               aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+               size=1)+
+  labs(fill="",x="Longitude",y="") +
+    ggtitle('Wet') +
+  theme(plot.title = element_text(hjust = 0.5))
+
+kd <- matopiba %>%
+  ggplot2::ggplot() +
+  ggplot2::geom_sf(fill="white", color="black",
+          size=.15, show.legend = FALSE) +
+  tema_mapa() +
+  geom_tile(data=ko_dw, aes(X,Y,fill= `2015_SIF_dry`) ) +
+  scale_fill_viridis_c()+
+  # scale_fill_gradient(low = "yellow", high = "blue",breaks=breaks) +
+    geom_polygon(data=poli_micro %>% as.tibble(),
+               aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+               size=1)+
+  labs(fill="",x="Longitude",y="Latitude") +
+    ggtitle('Dry')+
+  theme(plot.title = element_text(hjust = 0.5))
+
+patchwork  <- kd | kw
+patchwork + plot_annotation(
+  title = expression(paste("SIF(W",m^{-2},sr^{-1}, mu,m^{-1},")")),
+  subtitle = '2015',
+  theme = theme(plot.title = element_text(hjust = 0.5),
+                plot.subtitle = element_text(hjust = 0.5)),
+  
+)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-47-1.png)<!-- -->
+
+``` r
+kw <- matopiba %>%
+  ggplot2::ggplot() +
+  ggplot2::geom_sf(fill="white", color="black",
+          size=.15, show.legend = FALSE) +
+  tema_mapa() +
+  geom_tile(data=ko_dw, aes(X,Y,fill= `2019_Amp_T_wet`) ) +
+  scale_fill_viridis_c()+
+  # scale_fill_gradient(low = "yellow", high = "blue",breaks=breaks ) +
+    geom_polygon(data=poli_micro %>% as.tibble(),
+               aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+               size=1)+
+  labs(fill="",x="Longitude",y="") +
+    ggtitle('Wet') +
+  theme(plot.title = element_text(hjust = 0.5))
+
+kd <- matopiba %>%
+  ggplot2::ggplot() +
+  ggplot2::geom_sf(fill="white", color="black",
+          size=.15, show.legend = FALSE) +
+  tema_mapa() +
+  geom_tile(data=ko_dw, aes(X,Y,fill= `2019_Amp_T_dry`) ) +
+  scale_fill_viridis_c()+
+  # scale_fill_gradient(low = "yellow", high = "blue",breaks=breaks) +
+    geom_polygon(data=poli_micro %>% as.tibble(),
+               aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+               size=1)+
+  labs(fill="",x="Longitude",y="Latitude") +
+    ggtitle('Dry')+
+  theme(plot.title = element_text(hjust = 0.5))
+
+patchwork  <- kd | kw
+patchwork + plot_annotation(
+  title = 'Amp_T (ºC)',
+  subtitle = '2019',
+  theme = theme(plot.title = element_text(hjust = 0.5),
+                plot.subtitle = element_text(hjust = 0.5)),
+  
+)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
+
+``` r
+season <- "dry"
+year <- "2019"
+da <- ko_dw %>% 
+  select(X,Y,ends_with(season)) %>% 
+  select(starts_with(year))
+names(da) <- str_remove_all(names(da),
+                        c(season))
+names(da) <- str_remove_all(names(da),
+                        c(year))
+names(da) <- str_remove_all(names(da),
+                        c("_"))
+cor(da[c(2,1,5)]) %>% 
+   corrplot::corrplot.mixed(upper = "ellipse", lower = "number",lower.col = "black")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
+
+``` r
+season <- "wet"
+year <- "2019"
+da <- ko_dw %>% 
+  select(X,Y,ends_with(season)) %>% 
+  select(starts_with(year))
+names(da) <- str_remove_all(names(da),
+                        c(season))
+names(da) <- str_remove_all(names(da),
+                        c(year))
+names(da) <- str_remove_all(names(da),
+                        c("_"))
+cor(da[c(2,1,5)]) %>% 
+   corrplot::corrplot.mixed(upper = "ellipse", lower = "number",lower.col = "black")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-50-1.png)<!-- -->
+
+## Mapas para XCO2 mesma escala
+
+``` r
+matopiba %>% 
+  ggplot2::ggplot() +
+  ggplot2::geom_sf(fill="white", color="black",
+          size=.15, show.legend = FALSE) +
+  tema_mapa()+
+  geom_tile(data=ko_dw%>% 
+  select(X,Y,`2015_XCO2_wet`,`2015_XCO2_dry`) %>% 
+pivot_longer(cols = c(`2015_XCO2_wet`,`2015_XCO2_dry`),values_to = "value",names_to = "ano") %>% 
+  group_by(ano) %>% 
+  mutate(ano = str_remove(ano,"2015_XCO2_")), 
+            aes(X,Y,fill= value) ) +
+  scale_fill_viridis_c(limits = c(200.8, 400))+
+  geom_polygon(data=poli_micro %>% as.tibble(),
+               aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+               size=1)+
+  facet_wrap(~ano)+
+  labs(fill="XCO2")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
