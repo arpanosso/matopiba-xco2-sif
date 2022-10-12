@@ -226,7 +226,24 @@ matopiba %>%
 
 ## Juntando as duas bases de dados
 
+ANOMALIA CALCULADA (Dxco2)- De acordo com o trabalho de Golkar e
+Mousavi, 2022 (Variation of XCO2 anomaly patterns in the Middle East
+from OCO-2 satellite data)
+
+![\Delta XCO_2 = XCO_2 \text{ individual} - XCO_2 \text{ dailybackground}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5CDelta%20XCO_2%20%3D%20XCO_2%20%5Ctext%7B%20individual%7D%20-%20XCO_2%20%5Ctext%7B%20dailybackground%7D "\Delta XCO_2 = XCO_2 \text{ individual} - XCO_2 \text{ dailybackground}")
+
 ``` r
+tab_oco2_sif_media <- tab_oco2_sif_media %>%
+  mutate(
+    flag = def_pol(longitude, latitude, poli_micro)
+  ) %>%
+  filter(flag) %>%
+  group_by(flag, ano, mes) %>%
+  mutate(
+    xco2_background = median(media_xco2, na.rm=TRUE),
+    Dxco2 = media_xco2 - xco2_background
+  )
+
 tab_oco2_sif_uso <- tab_oco2_sif_media %>%
   group_by(longitude, latitude, ano) %>% 
   summarise(
@@ -235,7 +252,9 @@ tab_oco2_sif_uso <- tab_oco2_sif_media %>%
   ) %>% 
   left_join(uso_solo_uni,c("longitude","latitude","ano")) %>% 
   drop_na()
+```
 
+``` r
 tab_oco2_sif_media <- tab_oco2_sif_media %>%
   left_join(uso_solo_uni,c("longitude","latitude","ano")) %>% 
   drop_na()
@@ -275,7 +294,7 @@ tab_oco2_sif_media  %>%
   theme_bw()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media  %>%  
@@ -293,7 +312,7 @@ tab_oco2_sif_media  %>%
   theme_bw()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media  %>%  
@@ -311,7 +330,7 @@ tab_oco2_sif_media  %>%
   theme_bw()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media  %>%  
@@ -329,7 +348,7 @@ tab_oco2_sif_media  %>%
   theme_bw()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media  %>%  
@@ -347,8 +366,27 @@ tab_oco2_sif_media  %>%
   theme_bw()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- --> \##
-Correlação
+![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
+``` r
+tab_oco2_sif_media  %>%  
+    mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>% 
+  group_by(value, ano, mes) %>%  
+  mutate(
+    media_dxco2 = mean(Dxco2)
+  ) %>% 
+  ggplot(aes(x = mes_ano, y = media_dxco2,
+                               color=value)) +
+  geom_line() +
+  theme_bw()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+
+## Correlação
 
 ``` r
 mc <- tab_oco2_sif_media %>% ungroup() %>% 
@@ -356,13 +394,13 @@ mc <- tab_oco2_sif_media %>% ungroup() %>%
     flag_matopiba = def_pol(longitude, latitude, poli_micro)
   ) %>% 
   filter(flag_matopiba) %>% 
-  select(media_sif, media_xco2, Amp_T, LST_d, LST_n) %>% 
+  select(media_sif, media_xco2, Dxco2, Amp_T, LST_d, LST_n) %>% 
   drop_na() %>% 
   cor()
 corrplot::corrplot.mixed(mc,upper = "ellipse",lower = "number",lower.col = "black")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
 ## Correlação por uso
 
@@ -377,65 +415,62 @@ for(i in seq_along(land_uses)){
   ) %>% 
   filter(flag_matopiba) %>% 
     filter(value==land_uses[i]) %>% 
-    select(media_sif, media_xco2, Amp_T, LST_d, LST_n) %>% 
+    select(media_sif, media_xco2, Dxco2, Amp_T, LST_d, LST_n) %>% 
     drop_na() %>% 
     cor()
-  corrplot::corrplot.mixed(mc,lower = "number",lower.col = "black")
+  corrplot::corrplot.mixed(mc,upper = "ellipse",lower = "number",lower.col = "black")
 }
 #> [1] "Agriculture"
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
     #> [1] "Herbaceus Veg."
 
-![](README_files/figure-gfm/unnamed-chunk-18-2.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-20-2.png)<!-- -->
 
     #> [1] "Shrubs"
 
-![](README_files/figure-gfm/unnamed-chunk-18-3.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-20-3.png)<!-- -->
 
     #> [1] "Forest"
 
-![](README_files/figure-gfm/unnamed-chunk-18-4.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-20-4.png)<!-- -->
+
+# Análise de regressão para XCO2
 
 ``` r
 sc_sif <- tab_oco2_sif_media %>% 
-  mutate(
-        flag_matopiba = def_pol(longitude, latitude, poli_micro)
-  ) %>% 
-  filter(flag_matopiba) %>% 
   summarise(media_sif = mean(media_sif, na.rm=TRUE),
-                   media_xco2 = mean(media_xco2, na.rm=TRUE)
-  ) %>% filter(media_sif <= 2.5, media_xco2 <= 392.5 & media_xco2>=377.5) %>% 
+                    media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% 
+  filter(media_sif <= 2.5, media_xco2 <= 392.5 & media_xco2>=377.5) %>% 
   ggscatter(
     x = "media_sif", y = "media_xco2",
     add = "reg.line"
-  ) + # coord_cartesian(ylim = c(382.5,392))+
-  stat_cor(label.y = 395, label.x = .5) + 
-  stat_regline_equation(label.y = 396.2, label.x = .5)+
+  ) + 
+  stat_cor(label.y = 390, label.x = .5) + 
+  stat_regline_equation(label.y = 390.8, label.x = .5)+
   labs()
 
+
 sc_amp <- tab_oco2_sif_media %>% 
-  mutate(
-        flag_matopiba = def_pol(longitude, latitude, poli_micro)
-  ) %>% 
-  filter(flag_matopiba) %>% 
   summarise(media_Amp_T = mean(Amp_T, na.rm=TRUE),
                    media_xco2 = mean(media_xco2, na.rm=TRUE)
-  ) %>% filter(media_xco2 <= 392.5 & media_xco2>=377.5) %>%
+  ) %>% 
+  filter(media_xco2 <= 392.5 & media_xco2>=377.5) %>%
   ggscatter(
     x = "media_Amp_T", y = "media_xco2",
     add = "reg.line", color="red"
   ) + # coord_cartesian(ylim = c(382.5,392))+
-  stat_cor(label.y = 395, label.x = 2) + 
-  stat_regline_equation(label.y = 396.2, label.x = 2) +
+  stat_cor(label.y = 390, label.x = 2) + 
+  stat_regline_equation(label.y = 390.8, label.x = 2) +
   labs(y="")
 
 sc_sif | sc_amp
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media %>% 
@@ -457,7 +492,7 @@ tab_oco2_sif_media %>%
   stat_regline_equation(label.y = 391.2)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media %>% 
@@ -479,7 +514,7 @@ tab_oco2_sif_media %>%
   stat_regline_equation(label.y = 391.2)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
 ### Para período de seca
 
@@ -506,7 +541,7 @@ tab_oco2_sif_media %>%
   labs(color = "Dry: value")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media %>% 
@@ -531,7 +566,7 @@ tab_oco2_sif_media %>%
   labs(color = "Dry: value")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
 ### Para período úmido
 
@@ -558,7 +593,7 @@ tab_oco2_sif_media %>%
   labs(color = "Wet: value")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media %>% 
@@ -583,8 +618,9 @@ tab_oco2_sif_media %>%
   labs(color = "Wet: value")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- --> \##
-Motivação, quais pontos apresentaram alteração do uso do solo?
+![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+
+## Motivação, quais pontos apresentaram alteração do uso do solo?
 
 ``` r
 tab_oco2_sif_uso <- tab_oco2_sif_uso %>% ungroup()
@@ -598,12 +634,12 @@ tab_oco2_sif_uso %>%
   geom_point()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 Mapear os dados acima
 
 ``` r
-matopiba %>% 
+  matopiba %>% 
   ggplot() +
   geom_sf(fill="white", color="black",
           size=.15, show.legend = FALSE)+
@@ -620,7 +656,7 @@ matopiba %>%
                size=1)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
 
 Ideal é identificar no banco de dados quais são esses pontos, por meio
 da latitude e longitude
@@ -665,7 +701,7 @@ tab_oco2_sif_media  %>% ungroup() %>%
   stat_regline_equation(label.y = 391.2)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media  %>% ungroup() %>%
@@ -688,7 +724,7 @@ tab_oco2_sif_media  %>% ungroup() %>%
   stat_regline_equation(label.y = 391.2)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 ### Tabela de estatística descritiva
 
@@ -703,6 +739,24 @@ datas <- data_set_aux %>% pull(mes_ano) %>% unique()
 usos <-  data_set_aux %>% pull(value) %>% unique()
 
 for(i in 2015:2019){
+  daux <-  data_set_aux %>% 
+    filter(ano == i) %>% 
+    select(mes,value,media_xco2,media_sif,Amp_T,LST_d, LST_n) %>%
+    group_by(mes,value) %>% 
+    summarise(media_xco2=mean(media_xco2,na.rm=TRUE),
+              media_sif=mean(media_sif,na.rm=TRUE),
+              Amp_T=mean(Amp_T,na.rm=TRUE),
+              LST_d=mean(LST_d,na.rm=TRUE), 
+              LST_n=mean(LST_n,na.rm=TRUE))
+    
+  trat <- daux$value %>% as_factor()
+  media_xco2 <- daux$media_xco2
+  model<-aov(media_xco2 ~trat)
+  print(paste("Anova para ano:",i,""))
+  print(anova(model))
+  print(cat("\n"))
+  print(agricolae::LSD.test(model,"trat",alpha = 0.15,group=TRUE,console = TRUE,p.adj=c("fdr")))
+  
   for(j in seq_along(usos)){
    daux <-  data_set_aux %>% 
       filter(ano == i, value == usos[j]) %>% 
@@ -714,68 +768,413 @@ for(i in 2015:2019){
     else d_final <- rbind(d_final,d_aux)
   }
 }
+#> [1] "Anova para ano: 2015 "
+#> Analysis of Variance Table
+#> 
+#> Response: media_xco2
+#>           Df  Sum Sq Mean Sq F value Pr(>F)
+#> trat       3   1.033  0.3444  0.1084 0.9547
+#> Residuals 44 139.739  3.1759               
+#> 
+#> NULL
+#> 
+#> Study: model ~ "trat"
+#> 
+#> LSD t Test for media_xco2 
+#> P value adjustment method: fdr 
+#> 
+#> Mean Square Error:  3.175897 
+#> 
+#> trat,  means and individual ( 85 %) CI
+#> 
+#>                media_xco2      std  r      LCL      UCL      Min      Max
+#> Agriculture      385.8853 1.656571 12 385.1316 386.6391 383.2770 389.0938
+#> Forest           385.9472 1.577641 12 385.1935 386.7010 383.5333 388.2747
+#> Herbaceus Veg.   386.2022 1.578185 12 385.4485 386.9560 383.9291 389.0819
+#> Shrubs           385.8127 2.231534 12 385.0589 386.5664 382.7661 389.2690
+#> 
+#> Alpha: 0.15 ; DF Error: 44
+#> Critical Value of t: 1.465112 
+#> 
+#> Minimum Significant Difference: 1.065929 
+#> 
+#> Treatments with the same letter are not significantly different.
+#> 
+#>                media_xco2 groups
+#> Herbaceus Veg.   386.2022      a
+#> Forest           385.9472      a
+#> Agriculture      385.8853      a
+#> Shrubs           385.8127      a
+#> $statistics
+#>    MSerror Df     Mean        CV  t.value      MSD
+#>   3.175897 44 385.9619 0.4617308 1.465112 1.065929
+#> 
+#> $parameters
+#>         test p.ajusted name.t ntr alpha
+#>   Fisher-LSD       fdr   trat   4  0.15
+#> 
+#> $means
+#>                media_xco2      std  r      LCL      UCL      Min      Max
+#> Agriculture      385.8853 1.656571 12 385.1316 386.6391 383.2770 389.0938
+#> Forest           385.9472 1.577641 12 385.1935 386.7010 383.5333 388.2747
+#> Herbaceus Veg.   386.2022 1.578185 12 385.4485 386.9560 383.9291 389.0819
+#> Shrubs           385.8127 2.231534 12 385.0589 386.5664 382.7661 389.2690
+#>                     Q25      Q50      Q75
+#> Agriculture    384.4162 386.2024 386.5739
+#> Forest         384.4760 386.3686 387.0378
+#> Herbaceus Veg. 384.8926 386.4180 387.2119
+#> Shrubs         383.4533 386.6251 387.1572
+#> 
+#> $comparison
+#> NULL
+#> 
+#> $groups
+#>                media_xco2 groups
+#> Herbaceus Veg.   386.2022      a
+#> Forest           385.9472      a
+#> Agriculture      385.8853      a
+#> Shrubs           385.8127      a
+#> 
+#> attr(,"class")
+#> [1] "group"
+#> [1] "Anova para ano: 2016 "
+#> Analysis of Variance Table
+#> 
+#> Response: media_xco2
+#>           Df Sum Sq Mean Sq F value Pr(>F)
+#> trat       3  0.355 0.11831  0.0556 0.9825
+#> Residuals 44 93.561 2.12639               
+#> 
+#> NULL
+#> 
+#> Study: model ~ "trat"
+#> 
+#> LSD t Test for media_xco2 
+#> P value adjustment method: fdr 
+#> 
+#> Mean Square Error:  2.126389 
+#> 
+#> trat,  means and individual ( 85 %) CI
+#> 
+#>                media_xco2      std  r      LCL      UCL      Min      Max
+#> Agriculture      386.7833 1.444318 12 386.1665 387.4000 384.0998 389.0049
+#> Forest           386.8059 1.171448 12 386.1892 387.4227 384.7768 388.1667
+#> Herbaceus Veg.   386.7126 1.623696 12 386.0959 387.3293 383.0780 388.3091
+#> Shrubs           386.5853 1.552683 12 385.9686 387.2020 383.4667 388.4660
+#> 
+#> Alpha: 0.15 ; DF Error: 44
+#> Critical Value of t: 1.465112 
+#> 
+#> Minimum Significant Difference: 0.872201 
+#> 
+#> Treatments with the same letter are not significantly different.
+#> 
+#>                media_xco2 groups
+#> Forest           386.8059      a
+#> Agriculture      386.7833      a
+#> Herbaceus Veg.   386.7126      a
+#> Shrubs           386.5853      a
+#> $statistics
+#>    MSerror Df     Mean        CV  t.value      MSD
+#>   2.126389 44 386.7218 0.3770707 1.465112 0.872201
+#> 
+#> $parameters
+#>         test p.ajusted name.t ntr alpha
+#>   Fisher-LSD       fdr   trat   4  0.15
+#> 
+#> $means
+#>                media_xco2      std  r      LCL      UCL      Min      Max
+#> Agriculture      386.7833 1.444318 12 386.1665 387.4000 384.0998 389.0049
+#> Forest           386.8059 1.171448 12 386.1892 387.4227 384.7768 388.1667
+#> Herbaceus Veg.   386.7126 1.623696 12 386.0959 387.3293 383.0780 388.3091
+#> Shrubs           386.5853 1.552683 12 385.9686 387.2020 383.4667 388.4660
+#>                     Q25      Q50      Q75
+#> Agriculture    386.1304 386.9459 387.6478
+#> Forest         386.1760 386.9693 387.7884
+#> Herbaceus Veg. 385.8387 386.9560 388.1880
+#> Shrubs         386.1048 386.9457 387.5814
+#> 
+#> $comparison
+#> NULL
+#> 
+#> $groups
+#>                media_xco2 groups
+#> Forest           386.8059      a
+#> Agriculture      386.7833      a
+#> Herbaceus Veg.   386.7126      a
+#> Shrubs           386.5853      a
+#> 
+#> attr(,"class")
+#> [1] "group"
+#> [1] "Anova para ano: 2017 "
+#> Analysis of Variance Table
+#> 
+#> Response: media_xco2
+#>           Df Sum Sq Mean Sq F value Pr(>F)
+#> trat       3   6.96   2.320  0.5368 0.6598
+#> Residuals 40 172.88   4.322               
+#> 
+#> NULL
+#> 
+#> Study: model ~ "trat"
+#> 
+#> LSD t Test for media_xco2 
+#> P value adjustment method: fdr 
+#> 
+#> Mean Square Error:  4.322008 
+#> 
+#> trat,  means and individual ( 85 %) CI
+#> 
+#>                media_xco2      std  r      LCL      UCL      Min      Max
+#> Agriculture      385.0004 2.571709 11 384.0804 385.9204 380.5659 388.9877
+#> Forest           385.6695 1.802450 11 384.7495 386.5895 383.3861 388.3915
+#> Herbaceus Veg.   386.1141 1.803697 11 385.1941 387.0341 382.9614 388.7022
+#> Shrubs           385.6689 2.042597 11 384.7489 386.5889 382.9509 388.8459
+#> 
+#> Alpha: 0.15 ; DF Error: 40
+#> Critical Value of t: 1.46772 
+#> 
+#> Minimum Significant Difference: 1.301082 
+#> 
+#> Treatments with the same letter are not significantly different.
+#> 
+#>                media_xco2 groups
+#> Herbaceus Veg.   386.1141      a
+#> Forest           385.6695      a
+#> Shrubs           385.6689      a
+#> Agriculture      385.0004      a
+#> $statistics
+#>    MSerror Df     Mean        CV t.value      MSD
+#>   4.322008 40 385.6132 0.5391268 1.46772 1.301082
+#> 
+#> $parameters
+#>         test p.ajusted name.t ntr alpha
+#>   Fisher-LSD       fdr   trat   4  0.15
+#> 
+#> $means
+#>                media_xco2      std  r      LCL      UCL      Min      Max
+#> Agriculture      385.0004 2.571709 11 384.0804 385.9204 380.5659 388.9877
+#> Forest           385.6695 1.802450 11 384.7495 386.5895 383.3861 388.3915
+#> Herbaceus Veg.   386.1141 1.803697 11 385.1941 387.0341 382.9614 388.7022
+#> Shrubs           385.6689 2.042597 11 384.7489 386.5889 382.9509 388.8459
+#>                     Q25      Q50      Q75
+#> Agriculture    383.6439 385.1641 386.3697
+#> Forest         384.2171 385.1010 387.0245
+#> Herbaceus Veg. 385.2223 386.4121 387.3078
+#> Shrubs         384.1471 385.0117 387.1954
+#> 
+#> $comparison
+#> NULL
+#> 
+#> $groups
+#>                media_xco2 groups
+#> Herbaceus Veg.   386.1141      a
+#> Forest           385.6695      a
+#> Shrubs           385.6689      a
+#> Agriculture      385.0004      a
+#> 
+#> attr(,"class")
+#> [1] "group"
+#> [1] "Anova para ano: 2018 "
+#> Analysis of Variance Table
+#> 
+#> Response: media_xco2
+#>           Df  Sum Sq Mean Sq F value Pr(>F)
+#> trat       3   2.145 0.71513  0.3045 0.8219
+#> Residuals 44 103.321 2.34821               
+#> 
+#> NULL
+#> 
+#> Study: model ~ "trat"
+#> 
+#> LSD t Test for media_xco2 
+#> P value adjustment method: fdr 
+#> 
+#> Mean Square Error:  2.348207 
+#> 
+#> trat,  means and individual ( 85 %) CI
+#> 
+#>                media_xco2      std  r      LCL      UCL      Min      Max
+#> Agriculture      385.5352 1.604590 12 384.8871 386.1833 382.0957 387.6136
+#> Forest           385.3187 1.559248 12 384.6706 385.9668 382.5743 387.1889
+#> Herbaceus Veg.   384.9952 1.076691 12 384.3471 385.6433 383.1376 386.6627
+#> Shrubs           385.4866 1.796553 12 384.8385 386.1347 382.9067 388.0163
+#> 
+#> Alpha: 0.15 ; DF Error: 44
+#> Critical Value of t: 1.465112 
+#> 
+#> Minimum Significant Difference: 0.9165652 
+#> 
+#> Treatments with the same letter are not significantly different.
+#> 
+#>                media_xco2 groups
+#> Agriculture      385.5352      a
+#> Shrubs           385.4866      a
+#> Forest           385.3187      a
+#> Herbaceus Veg.   384.9952      a
+#> $statistics
+#>    MSerror Df     Mean        CV  t.value       MSD
+#>   2.348207 44 385.3339 0.3976774 1.465112 0.9165652
+#> 
+#> $parameters
+#>         test p.ajusted name.t ntr alpha
+#>   Fisher-LSD       fdr   trat   4  0.15
+#> 
+#> $means
+#>                media_xco2      std  r      LCL      UCL      Min      Max
+#> Agriculture      385.5352 1.604590 12 384.8871 386.1833 382.0957 387.6136
+#> Forest           385.3187 1.559248 12 384.6706 385.9668 382.5743 387.1889
+#> Herbaceus Veg.   384.9952 1.076691 12 384.3471 385.6433 383.1376 386.6627
+#> Shrubs           385.4866 1.796553 12 384.8385 386.1347 382.9067 388.0163
+#>                     Q25      Q50      Q75
+#> Agriculture    384.4046 386.1055 386.4757
+#> Forest         383.9865 385.5716 386.6856
+#> Herbaceus Veg. 384.3913 385.0949 385.7502
+#> Shrubs         383.6706 385.6869 386.9690
+#> 
+#> $comparison
+#> NULL
+#> 
+#> $groups
+#>                media_xco2 groups
+#> Agriculture      385.5352      a
+#> Shrubs           385.4866      a
+#> Forest           385.3187      a
+#> Herbaceus Veg.   384.9952      a
+#> 
+#> attr(,"class")
+#> [1] "group"
+#> [1] "Anova para ano: 2019 "
+#> Analysis of Variance Table
+#> 
+#> Response: media_xco2
+#>           Df  Sum Sq Mean Sq F value Pr(>F)
+#> trat       3   0.595  0.1983  0.0583 0.9813
+#> Residuals 44 149.705  3.4024               
+#> 
+#> NULL
+#> 
+#> Study: model ~ "trat"
+#> 
+#> LSD t Test for media_xco2 
+#> P value adjustment method: fdr 
+#> 
+#> Mean Square Error:  3.402379 
+#> 
+#> trat,  means and individual ( 85 %) CI
+#> 
+#>                media_xco2      std  r      LCL      UCL      Min      Max
+#> Agriculture      385.7153 2.498262 12 384.9351 386.4954 381.4532 389.5003
+#> Forest           385.4957 1.492857 12 384.7155 386.2758 383.0333 387.8283
+#> Herbaceus Veg.   385.4724 1.440237 12 384.6923 386.2526 382.7432 387.4454
+#> Shrubs           385.6960 1.750799 12 384.9159 386.4762 383.4513 388.9884
+#> 
+#> Alpha: 0.15 ; DF Error: 44
+#> Critical Value of t: 1.465112 
+#> 
+#> Minimum Significant Difference: 1.103282 
+#> 
+#> Treatments with the same letter are not significantly different.
+#> 
+#>                media_xco2 groups
+#> Agriculture      385.7153      a
+#> Shrubs           385.6960      a
+#> Forest           385.4957      a
+#> Herbaceus Veg.   385.4724      a
+#> $statistics
+#>    MSerror Df     Mean        CV  t.value      MSD
+#>   3.402379 44 385.5949 0.4783658 1.465112 1.103282
+#> 
+#> $parameters
+#>         test p.ajusted name.t ntr alpha
+#>   Fisher-LSD       fdr   trat   4  0.15
+#> 
+#> $means
+#>                media_xco2      std  r      LCL      UCL      Min      Max
+#> Agriculture      385.7153 2.498262 12 384.9351 386.4954 381.4532 389.5003
+#> Forest           385.4957 1.492857 12 384.7155 386.2758 383.0333 387.8283
+#> Herbaceus Veg.   385.4724 1.440237 12 384.6923 386.2526 382.7432 387.4454
+#> Shrubs           385.6960 1.750799 12 384.9159 386.4762 383.4513 388.9884
+#>                     Q25      Q50      Q75
+#> Agriculture    383.9740 385.8416 387.6999
+#> Forest         384.0967 385.6914 386.5443
+#> Herbaceus Veg. 384.2190 385.8150 386.3080
+#> Shrubs         384.2789 385.8640 387.0714
+#> 
+#> $comparison
+#> NULL
+#> 
+#> $groups
+#>                media_xco2 groups
+#> Agriculture      385.7153      a
+#> Shrubs           385.6960      a
+#> Forest           385.4957      a
+#> Herbaceus Veg.   385.4724      a
+#> 
+#> attr(,"class")
+#> [1] "group"
 d_final
 #>                 media_xco2     media_sif         Amp_T         LST_d
-#> N             6.300000e+01  6.300000e+01  6.300000e+01  6.300000e+01
+#> N             5.400000e+01  5.400000e+01  5.400000e+01  5.400000e+01
 #> N_perdidos    0.000000e+00  0.000000e+00  3.000000e+00  2.000000e+00
-#> Media         3.862401e+02  5.760488e-01  1.533484e+01  3.637985e+01
-#> Mediana       3.865231e+02  4.599022e-01  1.458131e+01  3.595749e+01
+#> Media         3.861670e+02  6.005090e-01  1.601730e+01  3.651813e+01
+#> Mediana       3.863709e+02  4.703543e-01  1.497000e+01  3.602941e+01
 #> Min           3.809519e+02  9.221319e-03  5.466665e+00  2.763142e+01
 #> Max           3.931707e+02  1.577927e+00  2.893929e+01  4.897428e+01
-#> Var           4.626444e+00  1.171864e-01  3.302501e+01  2.918969e+01
-#> DP            2.150917e+00  3.423250e-01  5.746739e+00  5.402749e+00
-#> Q1.25%        3.847121e+02  3.628172e-01  1.082314e+01  3.148899e+01
-#> Q3.75%        3.873948e+02  6.740647e-01  1.885687e+01  4.039200e+01
-#> CV            5.568859e-01  5.942639e+01  3.747506e+01  1.485094e+01
-#> EPM           2.709901e-01  4.312890e-02  7.419008e-01  6.917511e-01
-#> G1            2.649968e-01  1.383718e+00  5.770016e-01  2.629252e-01
-#> G2            9.752036e-01  1.455687e+00 -3.925319e-01 -8.619702e-01
-#> Norm          6.706884e-01  2.711636e-06  3.510972e-02  8.369253e-02
-#> N1            1.640000e+02  1.640000e+02  1.640000e+02  1.640000e+02
-#> N_perdidos1   0.000000e+00  0.000000e+00  8.000000e+00  5.000000e+00
-#> Media1        3.856426e+02  5.498801e-01  1.244523e+01  3.367887e+01
-#> Mediana1      3.857006e+02  4.813999e-01  1.222083e+01  3.359333e+01
-#> Min1          3.777214e+02  7.157025e-03  3.335548e+00  2.290749e+01
-#> Max1          3.925769e+02  1.590924e+00  2.753037e+01  4.666909e+01
-#> Var1          5.906596e+00  7.938672e-02  2.198832e+01  2.777928e+01
-#> DP1           2.430349e+00  2.817565e-01  4.689170e+00  5.270605e+00
-#> Q1.25%1       3.840295e+02  3.502461e-01  8.994994e+00  2.996213e+01
-#> Q3.75%1       3.875076e+02  7.323980e-01  1.527813e+01  3.691999e+01
-#> CV1           6.302076e-01  5.123963e+01  3.767847e+01  1.564959e+01
-#> EPM1          1.897784e-01  2.200149e-02  3.754341e-01  4.179862e-01
-#> G11          -2.156829e-01  7.947720e-01  5.851195e-01  3.640313e-01
-#> G21           2.267781e-01  5.675073e-01  3.259994e-01 -3.249109e-01
-#> Norm1         7.192884e-01  8.191768e-05  4.082746e-03  3.851103e-02
-#> N2            2.990000e+02  2.990000e+02  2.990000e+02  2.990000e+02
-#> N_perdidos2   0.000000e+00  0.000000e+00  1.500000e+01  1.200000e+01
-#> Media2        3.857596e+02  5.275000e-01  1.302616e+01  3.508664e+01
-#> Mediana2      3.859690e+02  4.438743e-01  1.257927e+01  3.459153e+01
-#> Min2          3.775994e+02  1.997272e-02  4.592514e+00  2.103000e+01
-#> Max2          3.917572e+02  1.670835e+00  2.756324e+01  5.163454e+01
-#> Var2          5.836582e+00  8.905319e-02  2.052148e+01  3.028216e+01
-#> DP2           2.415902e+00  2.984178e-01  4.530064e+00  5.502923e+00
-#> Q1.25%2       3.841929e+02  3.167765e-01  9.369846e+00  3.103666e+01
-#> Q3.75%2       3.873926e+02  7.082983e-01  1.586438e+01  3.905846e+01
-#> CV2           6.262714e-01  5.657210e+01  3.477666e+01  1.568381e+01
-#> EPM2          1.397152e-01  1.725795e-02  2.688099e-01  3.248273e-01
-#> G12          -3.474219e-01  1.012839e+00  5.383256e-01  2.366404e-01
-#> G22           3.886687e-01  9.735197e-01 -8.899307e-02 -2.638510e-01
-#> Norm2         5.270467e-02  1.832042e-10  3.459922e-05  1.492415e-01
-#> N3            4.070000e+02  4.070000e+02  4.070000e+02  4.070000e+02
-#> N_perdidos3   0.000000e+00  0.000000e+00  1.900000e+01  8.000000e+00
-#> Media3        3.857718e+02  5.817240e-01  1.105212e+01  3.306418e+01
-#> Mediana3      3.859357e+02  5.243362e-01  1.071617e+01  3.218699e+01
-#> Min3          3.783624e+02  2.217377e-02  1.336976e+00  2.103999e+01
-#> Max3          3.933323e+02  3.096356e+00  2.711378e+01  4.754352e+01
-#> Var3          4.975648e+00  1.179381e-01  2.069897e+01  2.747346e+01
-#> DP3           2.230616e+00  3.434212e-01  4.549612e+00  5.241513e+00
-#> Q1.25%3       3.842842e+02  3.533450e-01  7.551972e+00  2.894428e+01
-#> Q3.75%3       3.873028e+02  7.452369e-01  1.433205e+01  3.640884e+01
-#> CV3           5.782216e-01  5.903507e+01  4.116504e+01  1.585254e+01
-#> EPM3          1.105675e-01  1.702276e-02  2.309715e-01  2.624039e-01
-#> G13          -1.480475e-01  1.941006e+00  5.081507e-01  4.802646e-01
-#> G23           2.219964e-01  8.641308e+00  3.622139e-02 -3.618366e-01
-#> Norm3         2.810706e-01  3.911892e-17  1.097025e-05  9.544830e-07
+#> Var           4.736928e+00  1.257880e-01  3.441550e+01  3.159364e+01
+#> DP            2.176449e+00  3.546661e-01  5.866473e+00  5.620822e+00
+#> Q1.25%        3.846822e+02  3.822162e-01  1.170154e+01  3.133038e+01
+#> Q3.75%        3.872572e+02  6.760671e-01  1.978624e+01  4.053349e+01
+#> CV            5.636030e-01  5.906091e+01  3.662585e+01  1.539187e+01
+#> EPM           2.961771e-01  4.826394e-02  8.214705e-01  7.794678e-01
+#> G1            3.901287e-01  1.298644e+00  3.966246e-01  1.816255e-01
+#> G2            1.282637e+00  1.097964e+00 -5.474688e-01 -9.656380e-01
+#> Norm          5.443363e-01  1.141962e-05  2.606979e-01  7.829257e-02
+#> N1            8.700000e+01  8.700000e+01  8.700000e+01  8.700000e+01
+#> N_perdidos1   0.000000e+00  0.000000e+00  5.000000e+00  3.000000e+00
+#> Media1        3.863086e+02  5.557118e-01  1.314248e+01  3.466346e+01
+#> Mediana1      3.862104e+02  5.069408e-01  1.327059e+01  3.437611e+01
+#> Min1          3.802239e+02  9.481342e-02  3.805008e+00  2.711564e+01
+#> Max1          3.925769e+02  1.316767e+00  2.753037e+01  4.666909e+01
+#> Var1          5.162468e+00  6.966615e-02  2.276413e+01  2.155390e+01
+#> DP1           2.272106e+00  2.639435e-01  4.771177e+00  4.642617e+00
+#> Q1.25%1       3.847726e+02  3.601276e-01  9.721168e+00  3.110289e+01
+#> Q3.75%1       3.879818e+02  7.147794e-01  1.582943e+01  3.762508e+01
+#> CV1           5.881584e-01  4.749647e+01  3.630346e+01  1.339341e+01
+#> EPM1          2.435954e-01  2.829771e-02  5.268883e-01  5.065511e-01
+#> G11          -4.352244e-02  6.772222e-01  6.043726e-01  5.675359e-01
+#> G21           1.110370e-01  2.857006e-02  3.448446e-01 -3.528845e-01
+#> Norm1         9.633286e-01  8.324686e-03  6.274550e-02  9.183947e-03
+#> N2            1.440000e+02  1.440000e+02  1.440000e+02  1.440000e+02
+#> N_perdidos2   0.000000e+00  0.000000e+00  5.000000e+00  2.000000e+00
+#> Media2        3.859964e+02  5.708316e-01  1.363220e+01  3.535353e+01
+#> Mediana2      3.862856e+02  4.748968e-01  1.344036e+01  3.457794e+01
+#> Min2          3.784330e+02  2.955395e-02  4.670013e+00  2.588000e+01
+#> Max2          3.917572e+02  1.670835e+00  2.578208e+01  4.865799e+01
+#> Var2          6.456544e+00  9.196105e-02  2.076034e+01  2.232968e+01
+#> DP2           2.540973e+00  3.032508e-01  4.556352e+00  4.725429e+00
+#> Q1.25%2       3.844934e+02  3.565776e-01  9.903638e+00  3.155999e+01
+#> Q3.75%2       3.876712e+02  7.577658e-01  1.633408e+01  3.854953e+01
+#> CV2           6.582893e-01  5.312439e+01  3.342345e+01  1.336622e+01
+#> EPM2          2.117477e-01  2.527090e-02  3.864647e-01  3.965492e-01
+#> G12          -4.828963e-01  1.183893e+00  4.247304e-01  6.180466e-01
+#> G22           1.087696e-01  1.538720e+00 -3.661665e-01 -2.575204e-01
+#> Norm2         5.877340e-02  7.906810e-08  2.078199e-02  1.913486e-04
+#> N3            1.770000e+02  1.770000e+02  1.770000e+02  1.770000e+02
+#> N_perdidos3   0.000000e+00  0.000000e+00  6.000000e+00  1.000000e+00
+#> Media3        3.860841e+02  6.062313e-01  1.185771e+01  3.414720e+01
+#> Mediana3      3.864808e+02  5.270562e-01  1.150927e+01  3.332344e+01
+#> Min3          3.797511e+02  9.503351e-02  4.553883e+00  2.683749e+01
+#> Max3          3.907960e+02  2.312140e+00  2.711378e+01  4.681142e+01
+#> Var3          4.583376e+00  1.091071e-01  1.743504e+01  1.993719e+01
+#> DP3           2.140882e+00  3.303136e-01  4.175528e+00  4.465108e+00
+#> Q1.25%3       3.844101e+02  3.712445e-01  8.630835e+00  3.062196e+01
+#> Q3.75%3       3.876382e+02  7.454615e-01  1.477916e+01  3.741416e+01
+#> CV3           5.545119e-01  5.448640e+01  3.521360e+01  1.307606e+01
+#> EPM3          1.609186e-01  2.482789e-02  3.193106e-01  3.365702e-01
+#> G13          -3.606171e-01  1.719876e+00  6.481673e-01  5.860315e-01
+#> G23          -2.991075e-01  5.185431e+00  5.916624e-01 -2.710276e-01
+#> Norm3         1.857714e-02  8.055950e-11  3.113933e-04  9.758664e-05
 #> N4            4.000000e+01  4.000000e+01  4.000000e+01  4.000000e+01
 #> N_perdidos4   0.000000e+00  0.000000e+00  2.000000e+00  1.000000e+00
 #> Media4        3.868805e+02  5.363588e-01  1.776825e+01  3.694942e+01
@@ -791,111 +1190,111 @@ d_final
 #> G14          -4.383426e-01  1.102753e+00 -4.858344e-01 -1.352436e-01
 #> G24          -9.791135e-01  6.593445e-01 -7.957784e-01 -5.318211e-01
 #> Norm4         1.966518e-02  1.533284e-03  2.838806e-02  4.172826e-01
-#> N5            2.080000e+02  2.080000e+02  2.080000e+02  2.080000e+02
-#> N_perdidos5   0.000000e+00  0.000000e+00  7.000000e+00  4.000000e+00
-#> Media5        3.863637e+02  6.205109e-01  1.174172e+01  3.341747e+01
-#> Mediana5      3.864842e+02  5.330812e-01  1.145088e+01  3.285721e+01
-#> Min5          3.770478e+02  5.198132e-02  2.989990e+00  2.434199e+01
-#> Max5          3.919572e+02  4.023066e+00  2.527677e+01  4.625466e+01
-#> Var5          5.167172e+00  2.089346e-01  1.533554e+01  1.743823e+01
-#> DP5           2.273141e+00  4.570936e-01  3.916061e+00  4.175910e+00
-#> Q1.25%5       3.846777e+02  3.571386e-01  9.516217e+00  3.033011e+01
-#> Q3.75%5       3.880408e+02  7.348285e-01  1.415709e+01  3.607017e+01
-#> CV5           5.883424e-01  7.366407e+01  3.335168e+01  1.249619e+01
-#> EPM5          1.576140e-01  3.169374e-02  2.762177e-01  2.923722e-01
-#> G15          -5.620772e-01  3.448618e+00  2.605522e-01  4.456476e-01
-#> G25           8.640132e-01  1.857637e+01  3.785618e-01 -1.379572e-01
-#> Norm5         1.444788e-03  1.637698e-18  2.188629e-01  1.090442e-02
-#> N6            3.450000e+02  3.450000e+02  3.450000e+02  3.450000e+02
-#> N_perdidos6   0.000000e+00  0.000000e+00  1.300000e+01  1.200000e+01
-#> Media6        3.863486e+02  5.365736e-01  1.313919e+01  3.521159e+01
-#> Mediana6      3.866711e+02  4.295903e-01  1.272525e+01  3.464799e+01
-#> Min6          3.761040e+02  1.096667e-02  4.557133e+00  2.560000e+01
-#> Max6          3.917776e+02  3.129390e+00  2.360796e+01  4.728117e+01
-#> Var6          5.243350e+00  1.291666e-01  1.392665e+01  1.791906e+01
-#> DP6           2.289836e+00  3.593976e-01  3.731842e+00  4.233092e+00
-#> Q1.25%6       3.849721e+02  3.013398e-01  1.040417e+01  3.229262e+01
-#> Q3.75%6       3.879527e+02  7.179319e-01  1.588375e+01  3.838000e+01
-#> CV6           5.926866e-01  6.698012e+01  2.840237e+01  1.202187e+01
-#> EPM6          1.232806e-01  1.934932e-02  2.048115e-01  2.319720e-01
-#> G16          -8.173009e-01  2.267620e+00  3.937643e-01  2.699595e-01
-#> G26           1.643009e+00  1.006247e+01 -1.719942e-01 -3.869366e-01
-#> Norm6         1.746168e-07  1.655048e-18  1.251107e-03  1.075549e-02
-#> N7            4.700000e+02  4.700000e+02  4.700000e+02  4.700000e+02
-#> N_perdidos7   0.000000e+00  0.000000e+00  1.900000e+01  1.100000e+01
-#> Media7        3.866169e+02  5.992362e-01  1.095730e+01  3.273594e+01
-#> Mediana7      3.866748e+02  5.422009e-01  1.068133e+01  3.203570e+01
-#> Min7          3.779836e+02  1.668885e-02  5.981889e-01  2.323199e+01
-#> Max7          3.984694e+02  1.741411e+00  2.282696e+01  4.678399e+01
-#> Var7          4.314618e+00  1.079524e-01  1.581782e+01  1.789807e+01
-#> DP7           2.077166e+00  3.285611e-01  3.977163e+00  4.230611e+00
-#> Q1.25%7       3.854382e+02  3.463572e-01  8.116289e+00  2.965419e+01
-#> Q3.75%7       3.880447e+02  7.944360e-01  1.374903e+01  3.590263e+01
-#> CV7           5.372673e-01  5.482998e+01  3.629691e+01  1.292344e+01
-#> EPM7          9.581252e-02  1.515539e-02  1.872773e-01  1.974680e-01
-#> G17          -3.957516e-02  6.802840e-01  1.410253e-01  4.437695e-01
-#> G27           2.727840e+00 -3.341525e-02 -2.548065e-01 -2.663995e-01
-#> Norm7         2.155102e-07  5.631916e-10  3.134092e-01  3.948651e-06
-#> N8            5.400000e+01  5.400000e+01  5.400000e+01  5.400000e+01
+#> N5            9.100000e+01  9.100000e+01  9.100000e+01  9.100000e+01
+#> N_perdidos5   0.000000e+00  0.000000e+00  6.000000e+00  3.000000e+00
+#> Media5        3.869839e+02  7.122673e-01  1.207169e+01  3.405530e+01
+#> Mediana5      3.871712e+02  5.959798e-01  1.206711e+01  3.377583e+01
+#> Min5          3.818444e+02  1.797189e-01  2.989990e+00  2.528000e+01
+#> Max5          3.919572e+02  4.023066e+00  2.061575e+01  4.197427e+01
+#> Var5          4.525675e+00  3.179528e-01  1.420011e+01  1.283533e+01
+#> DP5           2.127363e+00  5.638731e-01  3.768303e+00  3.582643e+00
+#> Q1.25%5       3.854993e+02  4.018314e-01  9.516217e+00  3.136902e+01
+#> Q3.75%5       3.886698e+02  7.998110e-01  1.444335e+01  3.673999e+01
+#> CV5           5.497292e-01  7.916594e+01  3.121605e+01  1.052007e+01
+#> EPM5          2.230083e-01  5.910996e-02  4.087299e-01  3.819110e-01
+#> G15          -2.280353e-01  3.469100e+00 -3.624072e-03  6.240208e-02
+#> G25          -3.748702e-01  1.543519e+01 -1.895433e-01 -4.374936e-01
+#> Norm5         6.185466e-01  2.197969e-13  8.565121e-01  7.342369e-01
+#> N6            1.530000e+02  1.530000e+02  1.530000e+02  1.530000e+02
+#> N_perdidos6   0.000000e+00  0.000000e+00  2.000000e+00  1.000000e+00
+#> Media6        3.866384e+02  5.694299e-01  1.346548e+01  3.518672e+01
+#> Mediana6      3.872037e+02  4.520374e-01  1.322892e+01  3.406536e+01
+#> Min6          3.807789e+02  6.011542e-02  4.819997e+00  2.638666e+01
+#> Max6          3.912561e+02  3.129390e+00  2.354769e+01  4.609732e+01
+#> Var6          4.801795e+00  1.494889e-01  1.555952e+01  1.393425e+01
+#> DP6           2.191300e+00  3.866380e-01  3.944556e+00  3.732861e+00
+#> Q1.25%6       3.850424e+02  3.242709e-01  1.046465e+01  3.230363e+01
+#> Q3.75%6       3.882180e+02  7.411735e-01  1.635148e+01  3.812987e+01
+#> CV6           5.667569e-01  6.789914e+01  2.929385e+01  1.060872e+01
+#> EPM6          1.771561e-01  3.125783e-02  3.210034e-01  3.027750e-01
+#> G16          -5.612270e-01  2.949692e+00  2.998802e-01  4.941919e-01
+#> G26          -2.015762e-01  1.469744e+01 -4.151023e-01 -3.460827e-01
+#> Norm6         2.140877e-04  2.123545e-14  9.924499e-02  3.736629e-04
+#> N7            2.220000e+02  2.220000e+02  2.220000e+02  2.220000e+02
+#> N_perdidos7   0.000000e+00  0.000000e+00  8.000000e+00  4.000000e+00
+#> Media7        3.868884e+02  6.068561e-01  1.175445e+01  3.371583e+01
+#> Mediana7      3.869532e+02  5.485662e-01  1.164628e+01  3.301327e+01
+#> Min7          3.779836e+02  1.668885e-02  3.410004e+00  2.613998e+01
+#> Max7          3.984694e+02  1.474855e+00  2.282696e+01  4.313882e+01
+#> Var7          4.495183e+00  1.048800e-01  1.428818e+01  1.188876e+01
+#> DP7           2.120185e+00  3.238518e-01  3.779971e+00  3.448009e+00
+#> Q1.25%7       3.857152e+02  3.563462e-01  8.867218e+00  3.138699e+01
+#> Q3.75%7       3.881715e+02  8.047475e-01  1.433799e+01  3.662857e+01
+#> CV7           5.480094e-01  5.336550e+01  3.215779e+01  1.022667e+01
+#> EPM7          1.422975e-01  2.173551e-02  2.583935e-01  2.335286e-01
+#> G17           1.761387e-01  6.499208e-01  2.259476e-01  3.192832e-01
+#> G27           5.004262e+00 -2.165546e-01 -3.296314e-01 -6.729450e-01
+#> Norm7         2.189839e-07  3.431841e-06  1.115405e-01  4.267787e-04
+#> N8            4.500000e+01  4.500000e+01  4.500000e+01  4.500000e+01
 #> N_perdidos8   0.000000e+00  0.000000e+00  2.000000e+00  1.000000e+00
-#> Media8        3.853656e+02  5.422456e-01  1.391828e+01  3.391587e+01
-#> Mediana8      3.854610e+02  4.904086e-01  1.354367e+01  3.308073e+01
+#> Media8        3.851831e+02  5.584473e-01  1.455466e+01  3.377972e+01
+#> Mediana8      3.854384e+02  4.839439e-01  1.396400e+01  3.304608e+01
 #> Min8          3.765005e+02  1.384869e-01  3.119995e+00  2.312000e+01
 #> Max8          3.926764e+02  1.352243e+00  2.910690e+01  4.854454e+01
-#> Var8          7.315072e+00  8.683101e-02  3.489690e+01  3.039478e+01
-#> DP8           2.704639e+00  2.946710e-01  5.907360e+00  5.513146e+00
-#> Q1.25%8       3.838576e+02  3.170819e-01  9.195384e+00  3.049333e+01
-#> Q3.75%8       3.871575e+02  7.406174e-01  1.773830e+01  3.795333e+01
-#> CV8           7.018372e-01  5.434273e+01  4.244319e+01  1.625536e+01
-#> EPM8          3.680547e-01  4.009965e-02  8.192034e-01  7.572889e-01
-#> G18          -2.390020e-01  7.614195e-01  3.994090e-01  5.159345e-01
-#> G28           1.897536e+00 -8.270360e-02 -2.516119e-01  2.077954e-01
-#> Norm8         1.739105e-01  6.928823e-03  5.391036e-01  3.116808e-01
-#> N9            1.480000e+02  1.480000e+02  1.480000e+02  1.480000e+02
+#> Var8          7.670542e+00  9.312716e-02  3.826368e+01  3.423931e+01
+#> DP8           2.769574e+00  3.051674e-01  6.185764e+00  5.851436e+00
+#> Q1.25%8       3.837888e+02  3.192076e-01  9.394446e+00  3.008393e+01
+#> Q3.75%8       3.869932e+02  7.429352e-01  1.926323e+01  3.725503e+01
+#> CV8           7.190281e-01  5.464570e+01  4.250024e+01  1.732233e+01
+#> EPM8          4.128638e-01  4.549168e-02  9.433202e-01  8.821372e-01
+#> G18          -2.153162e-01  7.428459e-01  1.915705e-01  5.450043e-01
+#> G28           2.052812e+00 -2.426962e-01 -4.460672e-01  6.265756e-02
+#> Norm8         1.214024e-01  1.082961e-02  8.425323e-01  3.915902e-01
+#> N9            7.000000e+01  7.000000e+01  7.000000e+01  7.000000e+01
 #> N_perdidos9   0.000000e+00  0.000000e+00  3.000000e+00  1.000000e+00
-#> Media9        3.853426e+02  6.166509e-01  1.149846e+01  3.249800e+01
-#> Mediana9      3.855562e+02  5.193494e-01  1.096078e+01  3.177999e+01
-#> Min9          3.728863e+02  5.682880e-02  9.599915e-01  1.998000e+01
-#> Max9          3.940068e+02  5.390428e+00  2.302272e+01  4.477428e+01
-#> Var9          7.603218e+00  2.737737e-01  1.715273e+01  2.294026e+01
-#> DP9           2.757393e+00  5.232339e-01  4.141586e+00  4.789599e+00
-#> Q1.25%9       3.837104e+02  3.324334e-01  8.777774e+00  2.976325e+01
-#> Q3.75%9       3.868185e+02  7.605473e-01  1.411818e+01  3.449869e+01
-#> CV9           7.155694e-01  8.485091e+01  3.601862e+01  1.473814e+01
-#> EPM9          2.266563e-01  4.300956e-02  3.439400e-01  3.950395e-01
-#> G19          -6.958463e-01  5.491199e+00  3.908619e-01  5.602985e-01
-#> G29           3.810557e+00  4.685475e+01  1.859226e-01  4.644587e-01
-#> Norm9         1.470942e-05  4.244319e-18  1.042900e-01  1.659483e-04
-#> N10           2.690000e+02  2.690000e+02  2.690000e+02  2.690000e+02
-#> N_perdidos10  0.000000e+00  0.000000e+00  2.100000e+01  1.500000e+01
-#> Media10       3.856370e+02  5.435563e-01  1.282270e+01  3.424085e+01
-#> Mediana10     3.857298e+02  4.520652e-01  1.239677e+01  3.329619e+01
-#> Min10         3.754507e+02  9.284105e-03  4.337779e+00  2.176199e+01
-#> Max10         3.922358e+02  6.011580e+00  2.525830e+01  4.809047e+01
-#> Var10         5.662799e+00  2.182866e-01  1.498317e+01  2.301036e+01
-#> DP10          2.379664e+00  4.672115e-01  3.870810e+00  4.796911e+00
-#> Q1.25%10      3.842098e+02  2.949974e-01  9.999460e+00  3.087590e+01
-#> Q3.75%10      3.871793e+02  6.886526e-01  1.537625e+01  3.742285e+01
-#> CV10          6.170734e-01  8.595457e+01  3.018717e+01  1.400932e+01
-#> EPM10         1.450906e-01  2.848639e-02  2.457967e-01  3.009850e-01
-#> G110         -4.520488e-01  6.487607e+00  4.816697e-01  3.412597e-01
-#> G210          1.782376e+00  7.008366e+01  2.379957e-04 -1.336152e-01
-#> Norm10        1.820354e-04  1.837968e-24  3.330153e-03  3.918994e-04
-#> N11           3.620000e+02  3.620000e+02  3.620000e+02  3.620000e+02
-#> N_perdidos11  0.000000e+00  0.000000e+00  2.500000e+01  5.000000e+00
-#> Media11       3.855521e+02  6.652249e-01  1.057931e+01  3.213164e+01
-#> Mediana11     3.855343e+02  5.896062e-01  1.016529e+01  3.122999e+01
-#> Min11         3.766680e+02  6.703128e-03  9.000091e-01  2.179999e+01
+#> Media9        3.859024e+02  6.000844e-01  1.174959e+01  3.274166e+01
+#> Mediana9      3.861038e+02  5.864225e-01  1.096078e+01  3.195999e+01
+#> Min9          3.799754e+02  5.682880e-02  5.495898e+00  2.575499e+01
+#> Max9          3.940068e+02  1.863297e+00  2.199428e+01  4.477428e+01
+#> Var9          7.329104e+00  1.146735e-01  1.498277e+01  1.480739e+01
+#> DP9           2.707232e+00  3.386347e-01  3.870758e+00  3.848037e+00
+#> Q1.25%9       3.841079e+02  3.408622e-01  8.895553e+00  3.028749e+01
+#> Q3.75%9       3.872316e+02  7.544330e-01  1.401690e+01  3.327578e+01
+#> CV9           7.015328e-01  5.643118e+01  3.294378e+01  1.175273e+01
+#> EPM9          3.235761e-01  4.047459e-02  4.728884e-01  4.632493e-01
+#> G19           4.330990e-01  9.423671e-01  7.450402e-01  1.172994e+00
+#> G29           6.304804e-01  1.659441e+00  1.020162e-01  1.315682e+00
+#> Norm9         2.821258e-01  3.627606e-03  8.256956e-03  3.372806e-05
+#> N10           1.160000e+02  1.160000e+02  1.160000e+02  1.160000e+02
+#> N_perdidos10  0.000000e+00  0.000000e+00  6.000000e+00  3.000000e+00
+#> Media10       3.858478e+02  5.917078e-01  1.276270e+01  3.372188e+01
+#> Mediana10     3.856712e+02  4.938844e-01  1.220722e+01  3.225666e+01
+#> Min10         3.754507e+02  9.284105e-03  5.146667e+00  2.742000e+01
+#> Max10         3.920075e+02  6.011580e+00  2.282391e+01  4.463583e+01
+#> Var10         6.729728e+00  3.625970e-01  1.539476e+01  1.687370e+01
+#> DP10          2.594172e+00  6.021602e-01  3.923615e+00  4.107761e+00
+#> Q1.25%10      3.843062e+02  3.124362e-01  9.968778e+00  3.087453e+01
+#> Q3.75%10      3.874902e+02  7.156898e-01  1.532638e+01  3.535999e+01
+#> CV10          6.723304e-01  1.017665e+02  3.074284e+01  1.218129e+01
+#> EPM10         2.408628e-01  5.590918e-02  3.741020e-01  3.864257e-01
+#> G110         -2.985080e-01  6.627627e+00  6.248045e-01  1.154962e+00
+#> G210          1.623532e+00  5.763590e+01 -4.479096e-02  3.889631e-01
+#> Norm10        3.265121e-02  3.325937e-18  2.417991e-03  1.031560e-08
+#> N11           1.730000e+02  1.730000e+02  1.730000e+02  1.730000e+02
+#> N_perdidos11  0.000000e+00  0.000000e+00  1.300000e+01  4.000000e+00
+#> Media11       3.856797e+02  6.794837e-01  1.079781e+01  3.262449e+01
+#> Mediana11     3.857315e+02  5.994660e-01  1.051420e+01  3.186400e+01
+#> Min11         3.774532e+02  1.517444e-02  9.000091e-01  2.388000e+01
 #> Max11         3.942389e+02  5.105489e+00  2.599394e+01  4.578521e+01
-#> Var11         5.180859e+00  2.635002e-01  1.672515e+01  2.205909e+01
-#> DP11          2.276150e+00  5.133227e-01  4.089639e+00  4.696710e+00
-#> Q1.25%11      3.842091e+02  3.566857e-01  7.459323e+00  2.852667e+01
-#> Q3.75%11      3.870788e+02  8.649829e-01  1.326815e+01  3.470559e+01
-#> CV11          5.903612e-01  7.716529e+01  3.865697e+01  1.461709e+01
-#> EPM11         1.196318e-01  2.697964e-02  2.227768e-01  2.485763e-01
-#> G111         -7.515040e-02  4.341863e+00  5.170911e-01  7.373154e-01
-#> G211          1.424348e+00  3.179474e+01  2.825536e-01  1.312726e-01
-#> Norm11        1.778534e-03  3.301861e-25  5.356000e-04  6.109006e-09
+#> Var11         5.875086e+00  2.459352e-01  1.600344e+01  1.792715e+01
+#> DP11          2.423858e+00  4.959185e-01  4.000430e+00  4.234046e+00
+#> Q1.25%11      3.842820e+02  3.768980e-01  7.623755e+00  2.937199e+01
+#> Q3.75%11      3.873527e+02  8.918285e-01  1.327528e+01  3.489764e+01
+#> CV11          6.284640e-01  7.298461e+01  3.704855e+01  1.297812e+01
+#> EPM11         1.842825e-01  3.770399e-02  3.162618e-01  3.256959e-01
+#> G111         -3.831452e-02  4.462464e+00  6.017719e-01  8.765083e-01
+#> G211          1.157584e+00  3.634779e+01  6.476521e-01  5.023631e-01
+#> Norm11        1.196144e-01  3.795584e-17  5.329646e-03  2.576715e-06
 #> N12           3.700000e+01  3.700000e+01  3.700000e+01  3.700000e+01
 #> N_perdidos12  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00
 #> Media12       3.855324e+02  5.497164e-01  1.556382e+01  3.400188e+01
@@ -911,51 +1310,51 @@ d_final
 #> G112         -6.645734e-01  1.101570e+00 -4.004336e-02  2.969857e-01
 #> G212          1.414260e+00  1.417918e+00 -1.203296e+00 -4.936360e-01
 #> Norm12        1.977835e-01  1.781242e-02  5.711263e-02  2.669116e-01
-#> N13           1.930000e+02  1.930000e+02  1.930000e+02  1.930000e+02
-#> N_perdidos13  0.000000e+00  0.000000e+00  8.000000e+00  0.000000e+00
-#> Media13       3.851672e+02  6.052735e-01  1.139260e+01  3.244417e+01
-#> Mediana13     3.851574e+02  5.347102e-01  1.128800e+01  3.216999e+01
-#> Min13         3.803815e+02  6.126527e-03  1.108995e+00  2.315200e+01
-#> Max13         3.901096e+02  5.069615e+00  2.339222e+01  4.447999e+01
-#> Var13         3.404791e+00  2.542315e-01  1.357193e+01  1.503316e+01
-#> DP13          1.845208e+00  5.042138e-01  3.684011e+00  3.877262e+00
-#> Q1.25%13      3.839551e+02  3.438550e-01  9.110527e+00  2.958000e+01
-#> Q3.75%13      3.866021e+02  7.714875e-01  1.382858e+01  3.492000e+01
-#> CV13          4.790667e-01  8.330345e+01  3.233688e+01  1.195057e+01
-#> EPM13         1.328209e-01  3.629410e-02  2.708538e-01  2.790915e-01
-#> G113         -4.326095e-02  5.414827e+00  2.851480e-01  2.755031e-01
-#> G213         -2.119963e-01  4.228665e+01  4.323446e-01 -1.452629e-01
-#> Norm13        7.774387e-01  3.918726e-21  3.309396e-01  5.561540e-01
-#> N14           3.180000e+02  3.180000e+02  3.180000e+02  3.180000e+02
-#> N_perdidos14  0.000000e+00  0.000000e+00  1.500000e+01  1.300000e+01
-#> Media14       3.853070e+02  5.444700e-01  1.284506e+01  3.428476e+01
-#> Mediana14     3.853588e+02  4.428918e-01  1.256668e+01  3.384428e+01
-#> Min14         3.752794e+02  2.767132e-02  4.283107e+00  2.328999e+01
-#> Max14         3.918026e+02  4.480031e+00  2.594923e+01  4.885845e+01
-#> Var14         5.418329e+00  1.709033e-01  1.552732e+01  1.967330e+01
-#> DP14          2.327730e+00  4.134046e-01  3.940472e+00  4.435460e+00
-#> Q1.25%14      3.839213e+02  2.856942e-01  9.940973e+00  3.101461e+01
-#> Q3.75%14      3.868706e+02  6.689768e-01  1.548538e+01  3.717374e+01
-#> CV14          6.041236e-01  7.592789e+01  3.067696e+01  1.293712e+01
-#> EPM14         1.305326e-01  2.318258e-02  2.263742e-01  2.539737e-01
-#> G114         -4.015827e-01  3.787354e+00  4.455034e-01  3.345315e-01
-#> G214          1.344267e+00  2.745326e+01  2.006788e-01 -2.109036e-01
-#> Norm14        1.706348e-03  2.917937e-22  3.417988e-03  1.178508e-02
-#> N15           4.030000e+02  4.030000e+02  4.030000e+02  4.030000e+02
-#> N_perdidos15  0.000000e+00  0.000000e+00  6.000000e+00  1.000000e+00
-#> Media15       3.852869e+02  6.395072e-01  1.027683e+01  3.133104e+01
-#> Mediana15     3.854589e+02  5.371099e-01  9.537421e+00  3.042903e+01
-#> Min15         3.622772e+02  3.053604e-02  2.425003e+00  2.248799e+01
-#> Max15         3.915930e+02  7.709852e+00  2.228250e+01  4.354266e+01
-#> Var15         6.882778e+00  3.010347e-01  1.602427e+01  1.748434e+01
-#> DP15          2.623505e+00  5.486663e-01  4.003033e+00  4.181428e+00
-#> Q1.25%15      3.840620e+02  3.345487e-01  7.421999e+00  2.839960e+01
-#> Q3.75%15      3.869625e+02  8.403822e-01  1.299833e+01  3.373912e+01
-#> CV15          6.809225e-01  8.579517e+01  3.895203e+01  1.334596e+01
-#> EPM15         1.306861e-01  2.733101e-02  2.009065e-01  2.085507e-01
-#> G115         -2.303002e+00  6.415181e+00  4.880417e-01  6.512073e-01
-#> G215          1.549835e+01  7.285766e+01 -2.178184e-01 -3.133294e-02
-#> Norm15        8.923279e-18  9.523390e-29  5.426955e-06  9.835187e-09
+#> N13           8.700000e+01  8.700000e+01  8.700000e+01  8.700000e+01
+#> N_perdidos13  0.000000e+00  0.000000e+00  6.000000e+00  0.000000e+00
+#> Media13       3.851668e+02  6.582126e-01  1.175965e+01  3.296170e+01
+#> Mediana13     3.851304e+02  5.836879e-01  1.221040e+01  3.259599e+01
+#> Min13         3.803815e+02  9.166851e-02  3.608667e+00  2.589500e+01
+#> Max13         3.901096e+02  5.069615e+00  2.140381e+01  4.172362e+01
+#> Var13         4.329052e+00  3.111038e-01  1.636911e+01  1.231456e+01
+#> DP13          2.080637e+00  5.577668e-01  4.045876e+00  3.509210e+00
+#> Q1.25%13      3.839032e+02  3.625102e-01  8.533811e+00  3.015869e+01
+#> Q3.75%13      3.868060e+02  7.951533e-01  1.447460e+01  3.546179e+01
+#> CV13          5.401913e-01  8.473961e+01  3.440473e+01  1.064633e+01
+#> EPM13         2.230678e-01  5.979888e-02  4.495418e-01  3.762268e-01
+#> G113         -2.188353e-02  5.903795e+00  4.082960e-02  3.410486e-01
+#> G213         -2.355241e-01  4.594044e+01 -5.670797e-01 -4.251857e-01
+#> Norm13        8.304423e-01  3.086479e-15  5.969509e-01  2.224403e-01
+#> N14           1.500000e+02  1.500000e+02  1.500000e+02  1.500000e+02
+#> N_perdidos14  0.000000e+00  0.000000e+00  4.000000e+00  2.000000e+00
+#> Media14       3.856385e+02  5.857522e-01  1.279738e+01  3.380444e+01
+#> Mediana14     3.858335e+02  5.015228e-01  1.251750e+01  3.318570e+01
+#> Min14         3.768844e+02  6.065667e-02  5.505340e+00  2.773499e+01
+#> Max14         3.918026e+02  4.480031e+00  2.564018e+01  4.689142e+01
+#> Var14         5.935643e+00  1.999111e-01  1.640545e+01  1.445302e+01
+#> DP14          2.436317e+00  4.471142e-01  4.050364e+00  3.801713e+00
+#> Q1.25%14      3.840350e+02  3.187879e-01  9.777870e+00  3.075535e+01
+#> Q3.75%14      3.872208e+02  7.349627e-01  1.551250e+01  3.615417e+01
+#> CV14          6.317620e-01  7.633164e+01  3.164994e+01  1.124619e+01
+#> EPM14         1.989245e-01  3.650672e-02  3.352105e-01  3.124989e-01
+#> G114         -3.064560e-01  4.808774e+00  5.654401e-01  7.772711e-01
+#> G214          7.171851e-01  3.831567e+01  8.977674e-02  2.054039e-01
+#> Norm14        3.360278e-01  5.102048e-17  5.560038e-03  1.787159e-05
+#> N15           1.970000e+02  1.970000e+02  1.970000e+02  1.970000e+02
+#> N_perdidos15  0.000000e+00  0.000000e+00  2.000000e+00  0.000000e+00
+#> Media15       3.855645e+02  6.694486e-01  1.097111e+01  3.215149e+01
+#> Mediana15     3.860083e+02  5.633157e-01  1.033734e+01  3.116615e+01
+#> Min15         3.745277e+02  6.835881e-02  2.425003e+00  2.573999e+01
+#> Max15         3.905846e+02  4.294137e+00  2.228250e+01  4.336461e+01
+#> Var15         6.543743e+00  1.980714e-01  1.632126e+01  1.416171e+01
+#> DP15          2.558074e+00  4.450521e-01  4.039958e+00  3.763205e+00
+#> Q1.25%15      3.841907e+02  3.681213e-01  7.823752e+00  2.940380e+01
+#> Q3.75%15      3.874203e+02  8.987805e-01  1.355873e+01  3.442999e+01
+#> CV15          6.634620e-01  6.648040e+01  3.682360e+01  1.170461e+01
+#> EPM15         1.822552e-01  3.170865e-02  2.893074e-01  2.681173e-01
+#> G115         -9.938504e-01  3.140136e+00  5.981456e-01  8.368881e-01
+#> G215          1.789397e+00  2.140379e+01 -2.128696e-01  1.550660e-01
+#> Norm15        1.717426e-06  1.380862e-15  3.324914e-05  2.633659e-07
 #> N16           3.400000e+01  3.400000e+01  3.400000e+01  3.400000e+01
 #> N_perdidos16  0.000000e+00  0.000000e+00  1.000000e+00  1.000000e+00
 #> Media16       3.858440e+02  5.247424e-01  1.531451e+01  3.395556e+01
@@ -971,112 +1370,112 @@ d_final
 #> G116         -3.961857e-01  1.261699e+00  1.985663e-01  4.578204e-01
 #> G216         -1.610532e-01  2.317075e+00 -9.699687e-01 -6.166022e-01
 #> Norm16        5.941359e-01  9.045296e-03  2.805754e-01  1.395056e-01
-#> N17           2.150000e+02  2.150000e+02  2.150000e+02  2.150000e+02
-#> N_perdidos17  0.000000e+00  0.000000e+00  1.300000e+01  4.000000e+00
-#> Media17       3.853962e+02  5.927590e-01  1.135700e+01  3.266371e+01
-#> Mediana17     3.855533e+02  5.383160e-01  1.106696e+01  3.204166e+01
-#> Min17         3.784826e+02  9.678841e-03  2.036672e+00  2.377142e+01
-#> Max17         3.915550e+02  1.526368e+00  2.294857e+01  4.586571e+01
-#> Var17         4.111009e+00  9.427692e-02  1.701662e+01  1.831882e+01
-#> DP17          2.027562e+00  3.070455e-01  4.125121e+00  4.280049e+00
-#> Q1.25%17      3.842976e+02  3.716376e-01  8.742928e+00  2.951667e+01
-#> Q3.75%17      3.868102e+02  7.829209e-01  1.407348e+01  3.532514e+01
-#> CV17          5.260982e-01  5.179937e+01  3.632228e+01  1.310338e+01
-#> EPM17         1.382786e-01  2.094033e-02  2.902425e-01  2.946508e-01
-#> G117         -2.821856e-01  5.805769e-01  4.266867e-01  4.992093e-01
-#> G217          3.935500e-01  9.124658e-02  4.030161e-01 -7.299711e-02
-#> Norm17        2.186282e-01  3.565600e-04  7.649322e-03  4.760005e-03
-#> N18           3.570000e+02  3.570000e+02  3.570000e+02  3.570000e+02
-#> N_perdidos18  0.000000e+00  0.000000e+00  1.600000e+01  1.300000e+01
-#> Media18       3.854820e+02  5.460007e-01  1.308794e+01  3.469205e+01
-#> Mediana18     3.855953e+02  4.883867e-01  1.244788e+01  3.405785e+01
-#> Min18         3.787362e+02  2.605028e-02  4.789998e+00  2.403142e+01
-#> Max18         3.911629e+02  3.007400e+00  2.498675e+01  4.718799e+01
-#> Var18         4.785387e+00  1.054984e-01  1.785353e+01  2.283795e+01
-#> DP18          2.187553e+00  3.248051e-01  4.225343e+00  4.778907e+00
-#> Q1.25%18      3.839057e+02  3.184786e-01  9.774998e+00  3.109205e+01
-#> Q3.75%18      3.870335e+02  7.389949e-01  1.611104e+01  3.826651e+01
-#> CV18          5.674851e-01  5.948805e+01  3.228426e+01  1.377522e+01
-#> EPM18         1.157776e-01  1.719051e-02  2.288152e-01  2.576614e-01
-#> G118         -1.565119e-01  1.764960e+00  4.128317e-01  3.389421e-01
-#> G218         -7.706857e-02  8.722162e+00 -4.657752e-01 -5.543191e-01
-#> Norm18        5.626901e-01  9.027342e-15  3.807800e-05  1.450448e-04
-#> N19           4.410000e+02  4.410000e+02  4.410000e+02  4.410000e+02
-#> N_perdidos19  0.000000e+00  0.000000e+00  1.100000e+01  4.000000e+00
-#> Media19       3.855040e+02  6.437849e-01  1.060334e+01  3.200615e+01
-#> Mediana19     3.856240e+02  5.504127e-01  1.019976e+01  3.119998e+01
-#> Min19         3.734747e+02  1.456092e-04  1.000061e-01  2.226999e+01
-#> Max19         3.921248e+02  8.549264e+00  2.469705e+01  4.686266e+01
-#> Var19         5.479527e+00  4.087571e-01  1.657769e+01  1.898431e+01
-#> DP19          2.340839e+00  6.393412e-01  4.071571e+00  4.357099e+00
-#> Q1.25%19      3.842190e+02  3.349736e-01  7.777401e+00  2.864499e+01
-#> Q3.75%19      3.868762e+02  7.736124e-01  1.333512e+01  3.481583e+01
-#> CV19          6.072152e-01  9.930975e+01  3.839895e+01  1.361332e+01
-#> EPM19         1.114685e-01  3.044482e-02  1.963486e-01  2.084283e-01
-#> G119         -7.507972e-01  6.796991e+00  3.587264e-01  6.459830e-01
-#> G219          2.612623e+00  6.818497e+01  2.575848e-02 -5.345885e-03
-#> Norm19        1.970782e-08  1.133811e-32  3.198406e-03  1.469143e-08
+#> N17           9.800000e+01  9.800000e+01  9.800000e+01  9.800000e+01
+#> N_perdidos17  0.000000e+00  0.000000e+00  9.000000e+00  4.000000e+00
+#> Media17       3.856124e+02  6.380138e-01  1.192351e+01  3.342156e+01
+#> Mediana17     3.857588e+02  6.089844e-01  1.155633e+01  3.252099e+01
+#> Min17         3.784826e+02  9.984847e-02  5.559998e+00  2.632001e+01
+#> Max17         3.915550e+02  1.439231e+00  2.254313e+01  4.297166e+01
+#> Var17         4.901913e+00  8.394162e-02  1.508801e+01  1.318459e+01
+#> DP17          2.214026e+00  2.897268e-01  3.884328e+00  3.631060e+00
+#> Q1.25%17      3.844751e+02  4.535104e-01  9.082161e+00  3.068953e+01
+#> Q3.75%17      3.870683e+02  8.174935e-01  1.444659e+01  3.575583e+01
+#> CV17          5.741585e-01  4.541074e+01  3.257707e+01  1.086442e+01
+#> EPM17         2.236504e-01  2.926683e-02  4.117380e-01  3.745152e-01
+#> G117         -3.274868e-01  6.022028e-01  5.890237e-01  6.227339e-01
+#> G217          6.900875e-01  3.712514e-01  1.485180e-01 -2.477473e-01
+#> Norm17        4.425402e-01  2.348995e-02  2.061841e-02  4.674828e-03
+#> N18           1.660000e+02  1.660000e+02  1.660000e+02  1.660000e+02
+#> N_perdidos18  0.000000e+00  0.000000e+00  3.000000e+00  2.000000e+00
+#> Media18       3.857944e+02  5.810335e-01  1.272266e+01  3.402150e+01
+#> Mediana18     3.859343e+02  5.130673e-01  1.196070e+01  3.302336e+01
+#> Min18         3.805353e+02  4.215244e-02  4.789998e+00  2.775499e+01
+#> Max18         3.911232e+02  3.007400e+00  2.352726e+01  4.558666e+01
+#> Var18         4.634531e+00  1.293855e-01  1.871444e+01  1.682348e+01
+#> DP18          2.152796e+00  3.597019e-01  4.326019e+00  4.101644e+00
+#> Q1.25%18      3.843916e+02  3.467527e-01  9.134424e+00  3.086400e+01
+#> Q3.75%18      3.873438e+02  7.731888e-01  1.579792e+01  3.634832e+01
+#> CV18          5.580165e-01  6.190726e+01  3.400248e+01  1.205603e+01
+#> EPM18         1.670894e-01  2.791828e-02  3.388399e-01  3.202846e-01
+#> G118         -8.892885e-02  2.266380e+00  4.719275e-01  8.375912e-01
+#> G218         -3.913437e-01  1.177807e+01 -5.342359e-01  6.569787e-03
+#> Norm18        7.459111e-01  1.697596e-11  5.542488e-04  5.328781e-07
+#> N19           2.140000e+02  2.140000e+02  2.140000e+02  2.140000e+02
+#> N_perdidos19  0.000000e+00  0.000000e+00  5.000000e+00  2.000000e+00
+#> Media19       3.857129e+02  6.397399e-01  1.126434e+01  3.278435e+01
+#> Mediana19     3.858277e+02  5.593508e-01  1.079411e+01  3.238341e+01
+#> Min19         3.776436e+02  1.456092e-04  2.679993e+00  2.506399e+01
+#> Max19         3.917321e+02  4.165649e+00  2.469705e+01  4.398499e+01
+#> Var19         5.160387e+00  2.564605e-01  1.582056e+01  1.496328e+01
+#> DP19          2.271648e+00  5.064193e-01  3.977507e+00  3.868241e+00
+#> Q1.25%19      3.844355e+02  3.837270e-01  8.117897e+00  2.992591e+01
+#> Q3.75%19      3.871178e+02  7.773128e-01  1.385167e+01  3.513811e+01
+#> CV19          5.889480e-01  7.916019e+01  3.531062e+01  1.179905e+01
+#> EPM19         1.552867e-01  3.461811e-02  2.751299e-01  2.656719e-01
+#> G119         -4.867414e-01  4.083195e+00  6.494123e-01  7.449340e-01
+#> G219          8.612877e-01  2.442658e+01  2.096910e-01  7.023606e-02
+#> Norm19        1.263380e-02  2.513139e-20  6.836771e-05  1.091587e-06
 #>                      LST_n  ano            uso     medida
-#> N             6.300000e+01 2015    Agriculture          N
+#> N             5.400000e+01 2015    Agriculture          N
 #> N_perdidos    3.000000e+00 2015    Agriculture N_perdidos
-#> Media         2.118395e+01 2015    Agriculture      Media
-#> Mediana       2.167916e+01 2015    Agriculture    Mediana
+#> Media         2.066699e+01 2015    Agriculture      Media
+#> Mediana       2.051692e+01 2015    Agriculture    Mediana
 #> Min           1.572666e+01 2015    Agriculture        Min
-#> Max           2.656999e+01 2015    Agriculture        Max
-#> Var           7.811828e+00 2015    Agriculture        Var
-#> DP            2.794965e+00 2015    Agriculture         DP
-#> Q1.25%        1.911837e+01 2015    Agriculture     Q1.25%
-#> Q3.75%        2.359964e+01 2015    Agriculture     Q3.75%
-#> CV            1.319379e+01 2015    Agriculture         CV
-#> EPM           3.608284e-01 2015    Agriculture        EPM
-#> G1           -3.052009e-01 2015    Agriculture         G1
-#> G2           -7.483829e-01 2015    Agriculture         G2
-#> Norm          8.117868e-02 2015    Agriculture       Norm
-#> N1            1.640000e+02 2015 Herbaceus Veg.          N
-#> N_perdidos1   8.000000e+00 2015 Herbaceus Veg. N_perdidos
-#> Media1        2.128292e+01 2015 Herbaceus Veg.      Media
-#> Mediana1      2.155507e+01 2015 Herbaceus Veg.    Mediana
+#> Max           2.533647e+01 2015    Agriculture        Max
+#> Var           7.083493e+00 2015    Agriculture        Var
+#> DP            2.661483e+00 2015    Agriculture         DP
+#> Q1.25%        1.903237e+01 2015    Agriculture     Q1.25%
+#> Q3.75%        2.258122e+01 2015    Agriculture     Q3.75%
+#> CV            1.287795e+01 2015    Agriculture         CV
+#> EPM           3.726822e-01 2015    Agriculture        EPM
+#> G1           -2.165348e-01 2015    Agriculture         G1
+#> G2           -8.325857e-01 2015    Agriculture         G2
+#> Norm          9.276737e-02 2015    Agriculture       Norm
+#> N1            8.700000e+01 2015 Herbaceus Veg.          N
+#> N_perdidos1   5.000000e+00 2015 Herbaceus Veg. N_perdidos
+#> Media1        2.161264e+01 2015 Herbaceus Veg.      Media
+#> Mediana1      2.191198e+01 2015 Herbaceus Veg.    Mediana
 #> Min1          1.280249e+01 2015 Herbaceus Veg.        Min
-#> Max1          2.748249e+01 2015 Herbaceus Veg.        Max
-#> Var1          9.666740e+00 2015 Herbaceus Veg.        Var
-#> DP1           3.109138e+00 2015 Herbaceus Veg.         DP
-#> Q1.25%1       1.951475e+01 2015 Herbaceus Veg.     Q1.25%
-#> Q3.75%1       2.378681e+01 2015 Herbaceus Veg.     Q3.75%
-#> CV1           1.460861e+01 2015 Herbaceus Veg.         CV
-#> EPM1          2.489303e-01 2015 Herbaceus Veg.        EPM
-#> G11          -4.621860e-01 2015 Herbaceus Veg.         G1
-#> G21          -2.339259e-01 2015 Herbaceus Veg.         G2
-#> Norm1         1.256536e-02 2015 Herbaceus Veg.       Norm
-#> N2            2.990000e+02 2015         Shrubs          N
-#> N_perdidos2   1.500000e+01 2015         Shrubs N_perdidos
-#> Media2        2.210147e+01 2015         Shrubs      Media
-#> Mediana2      2.226569e+01 2015         Shrubs    Mediana
-#> Min2          1.497185e+01 2015         Shrubs        Min
-#> Max2          2.896476e+01 2015         Shrubs        Max
-#> Var2          6.403461e+00 2015         Shrubs        Var
-#> DP2           2.530506e+00 2015         Shrubs         DP
-#> Q1.25%2       2.067500e+01 2015         Shrubs     Q1.25%
-#> Q3.75%2       2.380782e+01 2015         Shrubs     Q3.75%
-#> CV2           1.144949e+01 2015         Shrubs         CV
-#> EPM2          1.501579e-01 2015         Shrubs        EPM
-#> G12          -4.124182e-01 2015         Shrubs         G1
-#> G22           2.811255e-01 2015         Shrubs         G2
-#> Norm2         1.547206e-03 2015         Shrubs       Norm
-#> N3            4.070000e+02 2015         Forest          N
-#> N_perdidos3   1.900000e+01 2015         Forest N_perdidos
-#> Media3        2.211931e+01 2015         Forest      Media
-#> Mediana3      2.237499e+01 2015         Forest    Mediana
-#> Min3          1.331866e+01 2015         Forest        Min
-#> Max3          2.705066e+01 2015         Forest        Max
-#> Var3          5.548584e+00 2015         Forest        Var
-#> DP3           2.355543e+00 2015         Forest         DP
-#> Q1.25%3       2.091340e+01 2015         Forest     Q1.25%
-#> Q3.75%3       2.378973e+01 2015         Forest     Q3.75%
-#> CV3           1.064926e+01 2015         Forest         CV
-#> EPM3          1.195846e-01 2015         Forest        EPM
-#> G13          -8.076607e-01 2015         Forest         G1
-#> G23           8.842234e-01 2015         Forest         G2
-#> Norm3         2.036197e-08 2015         Forest       Norm
+#> Max1          2.673399e+01 2015 Herbaceus Veg.        Max
+#> Var1          9.093505e+00 2015 Herbaceus Veg.        Var
+#> DP1           3.015544e+00 2015 Herbaceus Veg.         DP
+#> Q1.25%1       2.031128e+01 2015 Herbaceus Veg.     Q1.25%
+#> Q3.75%1       2.383346e+01 2015 Herbaceus Veg.     Q3.75%
+#> CV1           1.395268e+01 2015 Herbaceus Veg.         CV
+#> EPM1          3.330111e-01 2015 Herbaceus Veg.        EPM
+#> G11          -8.854520e-01 2015 Herbaceus Veg.         G1
+#> G21           6.410981e-01 2015 Herbaceus Veg.         G2
+#> Norm1         1.169318e-03 2015 Herbaceus Veg.       Norm
+#> N2            1.440000e+02 2015         Shrubs          N
+#> N_perdidos2   5.000000e+00 2015         Shrubs N_perdidos
+#> Media2        2.181083e+01 2015         Shrubs      Media
+#> Mediana2      2.192499e+01 2015         Shrubs    Mediana
+#> Min2          1.598583e+01 2015         Shrubs        Min
+#> Max2          2.576400e+01 2015         Shrubs        Max
+#> Var2          3.456679e+00 2015         Shrubs        Var
+#> DP2           1.859214e+00 2015         Shrubs         DP
+#> Q1.25%2       2.068818e+01 2015         Shrubs     Q1.25%
+#> Q3.75%2       2.332195e+01 2015         Shrubs     Q3.75%
+#> CV2           8.524272e+00 2015         Shrubs         CV
+#> EPM2          1.576965e-01 2015         Shrubs        EPM
+#> G12          -5.361011e-01 2015         Shrubs         G1
+#> G22           4.462834e-01 2015         Shrubs         G2
+#> Norm2         2.554645e-02 2015         Shrubs       Norm
+#> N3            1.770000e+02 2015         Forest          N
+#> N_perdidos3   6.000000e+00 2015         Forest N_perdidos
+#> Media3        2.241182e+01 2015         Forest      Media
+#> Mediana3      2.240799e+01 2015         Forest    Mediana
+#> Min3          1.528166e+01 2015         Forest        Min
+#> Max3          2.655523e+01 2015         Forest        Max
+#> Var3          3.708897e+00 2015         Forest        Var
+#> DP3           1.925850e+00 2015         Forest         DP
+#> Q1.25%3       2.111858e+01 2015         Forest     Q1.25%
+#> Q3.75%3       2.382504e+01 2015         Forest     Q3.75%
+#> CV3           8.593009e+00 2015         Forest         CV
+#> EPM3          1.472734e-01 2015         Forest        EPM
+#> G13          -3.085304e-01 2015         Forest         G1
+#> G23           2.953022e-01 2015         Forest         G2
+#> Norm3         9.151129e-02 2015         Forest       Norm
 #> N4            4.000000e+01 2016    Agriculture          N
 #> N_perdidos4   2.000000e+00 2016    Agriculture N_perdidos
 #> Media4        1.917668e+01 2016    Agriculture      Media
@@ -1092,111 +1491,111 @@ d_final
 #> G14           3.636955e-01 2016    Agriculture         G1
 #> G24          -3.254016e-01 2016    Agriculture         G2
 #> Norm4         8.096531e-01 2016    Agriculture       Norm
-#> N5            2.080000e+02 2016 Herbaceus Veg.          N
-#> N_perdidos5   7.000000e+00 2016 Herbaceus Veg. N_perdidos
-#> Media5        2.172864e+01 2016 Herbaceus Veg.      Media
-#> Mediana5      2.199999e+01 2016 Herbaceus Veg.    Mediana
-#> Min5          1.420499e+01 2016 Herbaceus Veg.        Min
-#> Max5          2.658332e+01 2016 Herbaceus Veg.        Max
-#> Var5          6.142586e+00 2016 Herbaceus Veg.        Var
-#> DP5           2.478424e+00 2016 Herbaceus Veg.         DP
-#> Q1.25%5       2.044875e+01 2016 Herbaceus Veg.     Q1.25%
-#> Q3.75%5       2.346000e+01 2016 Herbaceus Veg.     Q3.75%
-#> CV5           1.140626e+01 2016 Herbaceus Veg.         CV
-#> EPM5          1.748146e-01 2016 Herbaceus Veg.        EPM
-#> G15          -4.810110e-01 2016 Herbaceus Veg.         G1
-#> G25          -1.418058e-01 2016 Herbaceus Veg.         G2
-#> Norm5         3.494011e-03 2016 Herbaceus Veg.       Norm
-#> N6            3.450000e+02 2016         Shrubs          N
-#> N_perdidos6   1.300000e+01 2016         Shrubs N_perdidos
-#> Media6        2.207819e+01 2016         Shrubs      Media
-#> Mediana6      2.223425e+01 2016         Shrubs    Mediana
-#> Min6          1.510480e+01 2016         Shrubs        Min
-#> Max6          2.737285e+01 2016         Shrubs        Max
-#> Var6          5.790685e+00 2016         Shrubs        Var
-#> DP6           2.406384e+00 2016         Shrubs         DP
-#> Q1.25%6       2.057479e+01 2016         Shrubs     Q1.25%
-#> Q3.75%6       2.378321e+01 2016         Shrubs     Q3.75%
-#> CV6           1.089937e+01 2016         Shrubs         CV
-#> EPM6          1.320675e-01 2016         Shrubs        EPM
-#> G16          -3.356967e-01 2016         Shrubs         G1
-#> G26          -1.412617e-01 2016         Shrubs         G2
-#> Norm6         8.153382e-03 2016         Shrubs       Norm
-#> N7            4.700000e+02 2016         Forest          N
-#> N_perdidos7   1.900000e+01 2016         Forest N_perdidos
-#> Media7        2.182447e+01 2016         Forest      Media
-#> Mediana7      2.217143e+01 2016         Forest    Mediana
+#> N5            9.100000e+01 2016 Herbaceus Veg.          N
+#> N_perdidos5   6.000000e+00 2016 Herbaceus Veg. N_perdidos
+#> Media5        2.213122e+01 2016 Herbaceus Veg.      Media
+#> Mediana5      2.220666e+01 2016 Herbaceus Veg.    Mediana
+#> Min5          1.639304e+01 2016 Herbaceus Veg.        Min
+#> Max5          2.617230e+01 2016 Herbaceus Veg.        Max
+#> Var5          3.618926e+00 2016 Herbaceus Veg.        Var
+#> DP5           1.902348e+00 2016 Herbaceus Veg.         DP
+#> Q1.25%5       2.102750e+01 2016 Herbaceus Veg.     Q1.25%
+#> Q3.75%5       2.339000e+01 2016 Herbaceus Veg.     Q3.75%
+#> CV5           8.595766e+00 2016 Herbaceus Veg.         CV
+#> EPM5          2.063386e-01 2016 Herbaceus Veg.        EPM
+#> G15          -5.658998e-01 2016 Herbaceus Veg.         G1
+#> G25           8.386651e-01 2016 Herbaceus Veg.         G2
+#> Norm5         5.169032e-02 2016 Herbaceus Veg.       Norm
+#> N6            1.530000e+02 2016         Shrubs          N
+#> N_perdidos6   2.000000e+00 2016         Shrubs N_perdidos
+#> Media6        2.173380e+01 2016         Shrubs      Media
+#> Mediana6      2.182222e+01 2016         Shrubs    Mediana
+#> Min6          1.643840e+01 2016         Shrubs        Min
+#> Max6          2.544000e+01 2016         Shrubs        Max
+#> Var6          3.246516e+00 2016         Shrubs        Var
+#> DP6           1.801809e+00 2016         Shrubs         DP
+#> Q1.25%6       2.065344e+01 2016         Shrubs     Q1.25%
+#> Q3.75%6       2.304453e+01 2016         Shrubs     Q3.75%
+#> CV6           8.290355e+00 2016         Shrubs         CV
+#> EPM6          1.466292e-01 2016         Shrubs        EPM
+#> G16          -4.803772e-01 2016         Shrubs         G1
+#> G26           1.300525e-01 2016         Shrubs         G2
+#> Norm6         2.584795e-02 2016         Shrubs       Norm
+#> N7            2.220000e+02 2016         Forest          N
+#> N_perdidos7   8.000000e+00 2016         Forest N_perdidos
+#> Media7        2.201482e+01 2016         Forest      Media
+#> Mediana7      2.229178e+01 2016         Forest    Mediana
 #> Min7          1.402499e+01 2016         Forest        Min
-#> Max7          2.693999e+01 2016         Forest        Max
-#> Var7          5.121579e+00 2016         Forest        Var
-#> DP7           2.263090e+00 2016         Forest         DP
-#> Q1.25%7       2.040441e+01 2016         Forest     Q1.25%
-#> Q3.75%7       2.347823e+01 2016         Forest     Q3.75%
-#> CV7           1.036951e+01 2016         Forest         CV
-#> EPM7          1.065648e-01 2016         Forest        EPM
-#> G17          -6.007085e-01 2016         Forest         G1
-#> G27           2.514319e-01 2016         Forest         G2
-#> Norm7         1.122562e-06 2016         Forest       Norm
-#> N8            5.400000e+01 2017    Agriculture          N
+#> Max7          2.644222e+01 2016         Forest        Max
+#> Var7          3.978369e+00 2016         Forest        Var
+#> DP7           1.994585e+00 2016         Forest         DP
+#> Q1.25%7       2.094780e+01 2016         Forest     Q1.25%
+#> Q3.75%7       2.333250e+01 2016         Forest     Q3.75%
+#> CV7           9.060192e+00 2016         Forest         CV
+#> EPM7          1.363470e-01 2016         Forest        EPM
+#> G17          -1.077521e+00 2016         Forest         G1
+#> G27           2.497457e+00 2016         Forest         G2
+#> Norm7         1.395061e-07 2016         Forest       Norm
+#> N8            4.500000e+01 2017    Agriculture          N
 #> N_perdidos8   2.000000e+00 2017    Agriculture N_perdidos
-#> Media8        2.020521e+01 2017    Agriculture      Media
-#> Mediana8      2.020255e+01 2017    Agriculture    Mediana
+#> Media8        1.947297e+01 2017    Agriculture      Media
+#> Mediana8      1.943764e+01 2017    Agriculture    Mediana
 #> Min8          1.429999e+01 2017    Agriculture        Min
-#> Max8          2.528249e+01 2017    Agriculture        Max
-#> Var8          7.734198e+00 2017    Agriculture        Var
-#> DP8           2.781043e+00 2017    Agriculture         DP
-#> Q1.25%8       1.851249e+01 2017    Agriculture     Q1.25%
-#> Q3.75%8       2.213666e+01 2017    Agriculture     Q3.75%
-#> CV8           1.376399e+01 2017    Agriculture         CV
-#> EPM8          3.856612e-01 2017    Agriculture        EPM
-#> G18          -1.882767e-01 2017    Agriculture         G1
-#> G28          -4.419031e-01 2017    Agriculture         G2
-#> Norm8         5.632497e-01 2017    Agriculture       Norm
-#> N9            1.480000e+02 2017 Herbaceus Veg.          N
+#> Max8          2.377999e+01 2017    Agriculture        Max
+#> Var8          5.794375e+00 2017    Agriculture        Var
+#> DP8           2.407151e+00 2017    Agriculture         DP
+#> Q1.25%8       1.817174e+01 2017    Agriculture     Q1.25%
+#> Q3.75%8       2.108982e+01 2017    Agriculture     Q3.75%
+#> CV8           1.236150e+01 2017    Agriculture         CV
+#> EPM8          3.670871e-01 2017    Agriculture        EPM
+#> G18          -3.510836e-01 2017    Agriculture         G1
+#> G28          -2.538709e-01 2017    Agriculture         G2
+#> Norm8         4.148432e-01 2017    Agriculture       Norm
+#> N9            7.000000e+01 2017 Herbaceus Veg.          N
 #> N_perdidos9   3.000000e+00 2017 Herbaceus Veg. N_perdidos
-#> Media9        2.104468e+01 2017 Herbaceus Veg.      Media
-#> Mediana9      2.100888e+01 2017 Herbaceus Veg.    Mediana
+#> Media9        2.109704e+01 2017 Herbaceus Veg.      Media
+#> Mediana9      2.149714e+01 2017 Herbaceus Veg.    Mediana
 #> Min9          1.196461e+01 2017 Herbaceus Veg.        Min
-#> Max9          2.719555e+01 2017 Herbaceus Veg.        Max
-#> Var9          9.278219e+00 2017 Herbaceus Veg.        Var
-#> DP9           3.046017e+00 2017 Herbaceus Veg.         DP
-#> Q1.25%9       1.939565e+01 2017 Herbaceus Veg.     Q1.25%
-#> Q3.75%9       2.327499e+01 2017 Herbaceus Veg.     Q3.75%
-#> CV9           1.447404e+01 2017 Herbaceus Veg.         CV
-#> EPM9          2.529579e-01 2017 Herbaceus Veg.        EPM
-#> G19          -4.781983e-01 2017 Herbaceus Veg.         G1
-#> G29           1.807649e-01 2017 Herbaceus Veg.         G2
-#> Norm9         4.718987e-02 2017 Herbaceus Veg.       Norm
-#> N10           2.690000e+02 2017         Shrubs          N
-#> N_perdidos10  2.100000e+01 2017         Shrubs N_perdidos
-#> Media10       2.149351e+01 2017         Shrubs      Media
-#> Mediana10     2.182733e+01 2017         Shrubs    Mediana
+#> Max9          2.631636e+01 2017 Herbaceus Veg.        Max
+#> Var9          7.121074e+00 2017 Herbaceus Veg.        Var
+#> DP9           2.668534e+00 2017 Herbaceus Veg.         DP
+#> Q1.25%9       1.985916e+01 2017 Herbaceus Veg.     Q1.25%
+#> Q3.75%9       2.297785e+01 2017 Herbaceus Veg.     Q3.75%
+#> CV9           1.264885e+01 2017 Herbaceus Veg.         CV
+#> EPM9          3.260133e-01 2017 Herbaceus Veg.        EPM
+#> G19          -9.929200e-01 2017 Herbaceus Veg.         G1
+#> G29           1.593506e+00 2017 Herbaceus Veg.         G2
+#> Norm9         4.579067e-03 2017 Herbaceus Veg.       Norm
+#> N10           1.160000e+02 2017         Shrubs          N
+#> N_perdidos10  6.000000e+00 2017         Shrubs N_perdidos
+#> Media10       2.102381e+01 2017         Shrubs      Media
+#> Mediana10     2.112483e+01 2017         Shrubs    Mediana
 #> Min10         1.195999e+01 2017         Shrubs        Min
-#> Max10         2.786181e+01 2017         Shrubs        Max
-#> Var10         6.916592e+00 2017         Shrubs        Var
-#> DP10          2.629942e+00 2017         Shrubs         DP
-#> Q1.25%10      1.997761e+01 2017         Shrubs     Q1.25%
-#> Q3.75%10      2.343077e+01 2017         Shrubs     Q3.75%
-#> CV10          1.223598e+01 2017         Shrubs         CV
-#> EPM10         1.670015e-01 2017         Shrubs        EPM
-#> G110         -6.617006e-01 2017         Shrubs         G1
-#> G210          5.644037e-01 2017         Shrubs         G2
-#> Norm10        7.667867e-05 2017         Shrubs       Norm
-#> N11           3.620000e+02 2017         Forest          N
-#> N_perdidos11  2.500000e+01 2017         Forest N_perdidos
-#> Media11       2.173484e+01 2017         Forest      Media
-#> Mediana11     2.199817e+01 2017         Forest    Mediana
-#> Min11         1.410714e+01 2017         Forest        Min
-#> Max11         2.695411e+01 2017         Forest        Max
-#> Var11         4.858208e+00 2017         Forest        Var
-#> DP11          2.204134e+00 2017         Forest         DP
-#> Q1.25%11      2.028777e+01 2017         Forest     Q1.25%
-#> Q3.75%11      2.327428e+01 2017         Forest     Q3.75%
-#> CV11          1.014102e+01 2017         Forest         CV
-#> EPM11         1.200668e-01 2017         Forest        EPM
-#> G111         -4.719131e-01 2017         Forest         G1
-#> G211          7.070901e-02 2017         Forest         G2
-#> Norm11        8.355938e-04 2017         Forest       Norm
+#> Max10         2.488363e+01 2017         Shrubs        Max
+#> Var10         4.327212e+00 2017         Shrubs        Var
+#> DP10          2.080195e+00 2017         Shrubs         DP
+#> Q1.25%10      1.990666e+01 2017         Shrubs     Q1.25%
+#> Q3.75%10      2.247809e+01 2017         Shrubs     Q3.75%
+#> CV10          9.894470e+00 2017         Shrubs         CV
+#> EPM10         1.983388e-01 2017         Shrubs        EPM
+#> G110         -1.000623e+00 2017         Shrubs         G1
+#> G210          2.552188e+00 2017         Shrubs         G2
+#> Norm10        6.105974e-04 2017         Shrubs       Norm
+#> N11           1.730000e+02 2017         Forest          N
+#> N_perdidos11  1.300000e+01 2017         Forest N_perdidos
+#> Media11       2.200305e+01 2017         Forest      Media
+#> Mediana11     2.215582e+01 2017         Forest    Mediana
+#> Min11         1.744999e+01 2017         Forest        Min
+#> Max11         2.654799e+01 2017         Forest        Max
+#> Var11         3.387016e+00 2017         Forest        Var
+#> DP11          1.840385e+00 2017         Forest         DP
+#> Q1.25%11      2.089855e+01 2017         Forest     Q1.25%
+#> Q3.75%11      2.319310e+01 2017         Forest     Q3.75%
+#> CV11          8.364226e+00 2017         Forest         CV
+#> EPM11         1.454952e-01 2017         Forest        EPM
+#> G111         -2.225886e-01 2017         Forest         G1
+#> G211         -7.212356e-02 2017         Forest         G2
+#> Norm11        7.996909e-02 2017         Forest       Norm
 #> N12           3.700000e+01 2018    Agriculture          N
 #> N_perdidos12  0.000000e+00 2018    Agriculture N_perdidos
 #> Media12       1.843805e+01 2018    Agriculture      Media
@@ -1212,51 +1611,51 @@ d_final
 #> G112          3.626145e-01 2018    Agriculture         G1
 #> G212          9.889721e-02 2018    Agriculture         G2
 #> Norm12        3.845209e-01 2018    Agriculture       Norm
-#> N13           1.930000e+02 2018 Herbaceus Veg.          N
-#> N_perdidos13  8.000000e+00 2018 Herbaceus Veg. N_perdidos
-#> Media13       2.113990e+01 2018 Herbaceus Veg.      Media
-#> Mediana13     2.148461e+01 2018 Herbaceus Veg.    Mediana
+#> N13           8.700000e+01 2018 Herbaceus Veg.          N
+#> N_perdidos13  6.000000e+00 2018 Herbaceus Veg. N_perdidos
+#> Media13       2.132047e+01 2018 Herbaceus Veg.      Media
+#> Mediana13     2.175368e+01 2018 Herbaceus Veg.    Mediana
 #> Min13         1.377090e+01 2018 Herbaceus Veg.        Min
-#> Max13         2.631332e+01 2018 Herbaceus Veg.        Max
-#> Var13         6.116795e+00 2018 Herbaceus Veg.        Var
-#> DP13          2.473216e+00 2018 Herbaceus Veg.         DP
-#> Q1.25%13      1.962380e+01 2018 Herbaceus Veg.     Q1.25%
-#> Q3.75%13      2.277285e+01 2018 Herbaceus Veg.     Q3.75%
-#> CV13          1.169928e+01 2018 Herbaceus Veg.         CV
-#> EPM13         1.818344e-01 2018 Herbaceus Veg.        EPM
-#> G113         -3.835891e-01 2018 Herbaceus Veg.         G1
-#> G213         -7.722281e-02 2018 Herbaceus Veg.         G2
-#> Norm13        6.856362e-02 2018 Herbaceus Veg.       Norm
-#> N14           3.180000e+02 2018         Shrubs          N
-#> N_perdidos14  1.500000e+01 2018         Shrubs N_perdidos
-#> Media14       2.146626e+01 2018         Shrubs      Media
-#> Mediana14     2.161000e+01 2018         Shrubs    Mediana
-#> Min14         1.496374e+01 2018         Shrubs        Min
-#> Max14         2.740000e+01 2018         Shrubs        Max
-#> Var14         5.180777e+00 2018         Shrubs        Var
-#> DP14          2.276132e+00 2018         Shrubs         DP
-#> Q1.25%14      2.018303e+01 2018         Shrubs     Q1.25%
-#> Q3.75%14      2.291194e+01 2018         Shrubs     Q3.75%
-#> CV14          1.060330e+01 2018         Shrubs         CV
-#> EPM14         1.307604e-01 2018         Shrubs        EPM
-#> G114         -2.599514e-01 2018         Shrubs         G1
-#> G214          6.979062e-03 2018         Shrubs         G2
-#> Norm14        1.573075e-01 2018         Shrubs       Norm
-#> N15           4.030000e+02 2018         Forest          N
-#> N_perdidos15  6.000000e+00 2018         Forest N_perdidos
-#> Media15       2.109850e+01 2018         Forest      Media
-#> Mediana15     2.120833e+01 2018         Forest    Mediana
+#> Max13         2.509332e+01 2018 Herbaceus Veg.        Max
+#> Var13         4.965575e+00 2018 Herbaceus Veg.        Var
+#> DP13          2.228357e+00 2018 Herbaceus Veg.         DP
+#> Q1.25%13      2.037391e+01 2018 Herbaceus Veg.     Q1.25%
+#> Q3.75%13      2.271999e+01 2018 Herbaceus Veg.     Q3.75%
+#> CV13          1.045173e+01 2018 Herbaceus Veg.         CV
+#> EPM13         2.475952e-01 2018 Herbaceus Veg.        EPM
+#> G113         -9.815372e-01 2018 Herbaceus Veg.         G1
+#> G213          1.453639e+00 2018 Herbaceus Veg.         G2
+#> Norm13        9.794199e-04 2018 Herbaceus Veg.       Norm
+#> N14           1.500000e+02 2018         Shrubs          N
+#> N_perdidos14  4.000000e+00 2018         Shrubs N_perdidos
+#> Media14       2.105559e+01 2018         Shrubs      Media
+#> Mediana14     2.131691e+01 2018         Shrubs    Mediana
+#> Min14         1.560799e+01 2018         Shrubs        Min
+#> Max14         2.444000e+01 2018         Shrubs        Max
+#> Var14         3.084062e+00 2018         Shrubs        Var
+#> DP14          1.756150e+00 2018         Shrubs         DP
+#> Q1.25%14      2.023500e+01 2018         Shrubs     Q1.25%
+#> Q3.75%14      2.220349e+01 2018         Shrubs     Q3.75%
+#> CV14          8.340537e+00 2018         Shrubs         CV
+#> EPM14         1.453400e-01 2018         Shrubs        EPM
+#> G114         -6.296504e-01 2018         Shrubs         G1
+#> G214          2.514063e-01 2018         Shrubs         G2
+#> Norm14        2.750992e-03 2018         Shrubs       Norm
+#> N15           1.970000e+02 2018         Forest          N
+#> N_perdidos15  2.000000e+00 2018         Forest N_perdidos
+#> Media15       2.120912e+01 2018         Forest      Media
+#> Mediana15     2.130249e+01 2018         Forest    Mediana
 #> Min15         1.245042e+01 2018         Forest        Min
 #> Max15         2.596285e+01 2018         Forest        Max
-#> Var15         5.066995e+00 2018         Forest        Var
-#> DP15          2.250999e+00 2018         Forest         DP
-#> Q1.25%15      1.965894e+01 2018         Forest     Q1.25%
-#> Q3.75%15      2.275999e+01 2018         Forest     Q3.75%
-#> CV15          1.066900e+01 2018         Forest         CV
-#> EPM15         1.129744e-01 2018         Forest        EPM
-#> G115         -5.468941e-01 2018         Forest         G1
-#> G215          4.334274e-01 2018         Forest         G2
-#> Norm15        8.292090e-05 2018         Forest       Norm
+#> Var15         4.203918e+00 2018         Forest        Var
+#> DP15          2.050346e+00 2018         Forest         DP
+#> Q1.25%15      2.010528e+01 2018         Forest     Q1.25%
+#> Q3.75%15      2.266000e+01 2018         Forest     Q3.75%
+#> CV15          9.667285e+00 2018         Forest         CV
+#> EPM15         1.468283e-01 2018         Forest        EPM
+#> G115         -9.786342e-01 2018         Forest         G1
+#> G215          2.353440e+00 2018         Forest         G2
+#> Norm15        3.925521e-06 2018         Forest       Norm
 #> N16           3.400000e+01 2019    Agriculture          N
 #> N_perdidos16  1.000000e+00 2019    Agriculture N_perdidos
 #> Media16       1.864105e+01 2019    Agriculture      Media
@@ -1272,51 +1671,51 @@ d_final
 #> G116          2.647847e-01 2019    Agriculture         G1
 #> G216         -6.183133e-01 2019    Agriculture         G2
 #> Norm16        4.197679e-01 2019    Agriculture       Norm
-#> N17           2.150000e+02 2019 Herbaceus Veg.          N
-#> N_perdidos17  1.300000e+01 2019 Herbaceus Veg. N_perdidos
-#> Media17       2.144514e+01 2019 Herbaceus Veg.      Media
-#> Mediana17     2.178799e+01 2019 Herbaceus Veg.    Mediana
+#> N17           9.800000e+01 2019 Herbaceus Veg.          N
+#> N_perdidos17  9.000000e+00 2019 Herbaceus Veg. N_perdidos
+#> Media17       2.160829e+01 2019 Herbaceus Veg.      Media
+#> Mediana17     2.186665e+01 2019 Herbaceus Veg.    Mediana
 #> Min17         1.388090e+01 2019 Herbaceus Veg.        Min
-#> Max17         2.677555e+01 2019 Herbaceus Veg.        Max
-#> Var17         6.672278e+00 2019 Herbaceus Veg.        Var
-#> DP17          2.583075e+00 2019 Herbaceus Veg.         DP
-#> Q1.25%17      1.997894e+01 2019 Herbaceus Veg.     Q1.25%
-#> Q3.75%17      2.308922e+01 2019 Herbaceus Veg.     Q3.75%
-#> CV17          1.204504e+01 2019 Herbaceus Veg.         CV
-#> EPM17         1.817445e-01 2019 Herbaceus Veg.        EPM
-#> G117         -5.507600e-01 2019 Herbaceus Veg.         G1
-#> G217         -3.257700e-03 2019 Herbaceus Veg.         G2
-#> Norm17        1.107898e-03 2019 Herbaceus Veg.       Norm
-#> N18           3.570000e+02 2019         Shrubs          N
-#> N_perdidos18  1.600000e+01 2019         Shrubs N_perdidos
-#> Media18       2.163137e+01 2019         Shrubs      Media
-#> Mediana18     2.197384e+01 2019         Shrubs    Mediana
-#> Min18         1.502999e+01 2019         Shrubs        Min
-#> Max18         2.754416e+01 2019         Shrubs        Max
-#> Var18         6.063053e+00 2019         Shrubs        Var
-#> DP18          2.462327e+00 2019         Shrubs         DP
-#> Q1.25%18      2.002608e+01 2019         Shrubs     Q1.25%
-#> Q3.75%18      2.334000e+01 2019         Shrubs     Q3.75%
-#> CV18          1.138313e+01 2019         Shrubs         CV
-#> EPM18         1.333425e-01 2019         Shrubs        EPM
-#> G118         -3.446918e-01 2019         Shrubs         G1
-#> G218         -1.339440e-01 2019         Shrubs         G2
-#> Norm18        6.275894e-03 2019         Shrubs       Norm
-#> N19           4.410000e+02 2019         Forest          N
-#> N_perdidos19  1.100000e+01 2019         Forest N_perdidos
-#> Media19       2.146741e+01 2019         Forest      Media
-#> Mediana19     2.178616e+01 2019         Forest    Mediana
+#> Max17         2.605916e+01 2019 Herbaceus Veg.        Max
+#> Var17         4.499343e+00 2019 Herbaceus Veg.        Var
+#> DP17          2.121166e+00 2019 Herbaceus Veg.         DP
+#> Q1.25%17      2.046117e+01 2019 Herbaceus Veg.     Q1.25%
+#> Q3.75%17      2.297817e+01 2019 Herbaceus Veg.     Q3.75%
+#> CV17          9.816444e+00 2019 Herbaceus Veg.         CV
+#> EPM17         2.248431e-01 2019 Herbaceus Veg.        EPM
+#> G117         -1.032794e+00 2019 Herbaceus Veg.         G1
+#> G217          1.855518e+00 2019 Herbaceus Veg.         G2
+#> Norm17        6.896698e-04 2019 Herbaceus Veg.       Norm
+#> N18           1.660000e+02 2019         Shrubs          N
+#> N_perdidos18  3.000000e+00 2019         Shrubs N_perdidos
+#> Media18       2.131282e+01 2019         Shrubs      Media
+#> Mediana18     2.143571e+01 2019         Shrubs    Mediana
+#> Min18         1.554166e+01 2019         Shrubs        Min
+#> Max18         2.524500e+01 2019         Shrubs        Max
+#> Var18         3.507876e+00 2019         Shrubs        Var
+#> DP18          1.872932e+00 2019         Shrubs         DP
+#> Q1.25%18      1.994899e+01 2019         Shrubs     Q1.25%
+#> Q3.75%18      2.290133e+01 2019         Shrubs     Q3.75%
+#> CV18          8.787819e+00 2019         Shrubs         CV
+#> EPM18         1.466994e-01 2019         Shrubs        EPM
+#> G118         -4.546747e-01 2019         Shrubs         G1
+#> G218         -1.905329e-01 2019         Shrubs         G2
+#> Norm18        9.230103e-03 2019         Shrubs       Norm
+#> N19           2.140000e+02 2019         Forest          N
+#> N_perdidos19  5.000000e+00 2019         Forest N_perdidos
+#> Media19       2.155456e+01 2019         Forest      Media
+#> Mediana19     2.189904e+01 2019         Forest    Mediana
 #> Min19         1.250952e+01 2019         Forest        Min
-#> Max19         2.653221e+01 2019         Forest        Max
-#> Var19         5.708661e+00 2019         Forest        Var
-#> DP19          2.389280e+00 2019         Forest         DP
-#> Q1.25%19      2.003689e+01 2019         Forest     Q1.25%
-#> Q3.75%19      2.319521e+01 2019         Forest     Q3.75%
-#> CV19          1.112980e+01 2019         Forest         CV
-#> EPM19         1.152213e-01 2019         Forest        EPM
-#> G119         -7.810380e-01 2019         Forest         G1
-#> G219          7.153195e-01 2019         Forest         G2
-#> Norm19        1.009642e-08 2019         Forest       Norm
+#> Max19         2.518768e+01 2019         Forest        Max
+#> Var19         4.951593e+00 2019         Forest        Var
+#> DP19          2.225218e+00 2019         Forest         DP
+#> Q1.25%19      2.019749e+01 2019         Forest     Q1.25%
+#> Q3.75%19      2.312799e+01 2019         Forest     Q3.75%
+#> CV19          1.032365e+01 2019         Forest         CV
+#> EPM19         1.539215e-01 2019         Forest        EPM
+#> G119         -1.025107e+00 2019         Forest         G1
+#> G219          1.746159e+00 2019         Forest         G2
+#> Norm19        2.002594e-07 2019         Forest       Norm
 # write_xlsx(d_final,"data/estatistica_descritiva.xlsx")
 ```
 
@@ -1345,23 +1744,26 @@ dados_geo <- dados_geo %>%
   drop_na()
 
 dados_geo %>% glimpse()
-#> Rows: 6,433
-#> Columns: 15
-#> $ longitude  <dbl> -50.5, -50.5, -50.5, -48.5, -48.5, -47.5, -47.5, -47.5, -47~
-#> $ latitude   <dbl> -12.5, -11.5, -10.5, -9.5, -8.5, -12.5, -11.5, -10.5, -9.5,~
-#> $ mes_ano    <date> 2015-01-01, 2015-01-01, 2015-01-01, 2015-01-01, 2015-01-01~
-#> $ XCO2       <dbl> 382.4614, 382.7462, 382.8724, 384.4948, 383.7093, 384.5950,~
-#> $ SIF        <dbl> 1.0275361, 0.8187736, 0.9326621, 0.8214164, 0.9543531, 1.17~
-#> $ região     <chr> "to", "to", "to", "to", "to", "to", "to", "to", "to", "pi",~
-#> $ ano        <dbl> 2015, 2015, 2015, 2015, 2015, 2015, 2015, 2015, 2015, 2015,~
-#> $ mes        <dbl> 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,~
-#> $ media_sif  <dbl> 1.0275361, 0.8187736, 0.9326621, 0.8214164, 0.9543531, 1.17~
-#> $ media_xco2 <dbl> 382.4614, 382.7462, 382.8724, 384.4948, 383.7093, 384.5950,~
-#> $ value      <chr> "Herbaceus Veg.", "Forest", "Herbaceus Veg.", "Forest", "Fo~
-#> $ LST_d      <dbl> 31.80200, 33.17500, 28.26221, 31.45272, 31.06999, 31.91999,~
-#> $ LST_n      <dbl> 24.72000, 24.54999, 24.92667, 24.46666, 23.55500, 23.98666,~
-#> $ Amp_T      <dbl> 7.081995, 8.625008, 3.335548, 6.986053, 7.514987, 7.933323,~
-#> $ mudança    <lgl> FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, TRUE,~
+#> Rows: 3,154
+#> Columns: 18
+#> $ longitude       <dbl> -50.5, -50.5, -48.5, -48.5, -47.5, -47.5, -47.5, -47.5~
+#> $ latitude        <dbl> -12.5, -11.5, -9.5, -8.5, -12.5, -11.5, -10.5, -9.5, -~
+#> $ mes_ano         <date> 2015-01-01, 2015-01-01, 2015-01-01, 2015-01-01, 2015-~
+#> $ XCO2            <dbl> 382.4614, 382.7462, 384.4948, 383.7093, 384.5950, 383.~
+#> $ SIF             <dbl> 1.0275361, 0.8187736, 0.8214164, 0.9543531, 1.1749167,~
+#> $ região          <chr> "to", "to", "to", "to", "to", "to", "to", "to", "pi", ~
+#> $ ano             <dbl> 2015, 2015, 2015, 2015, 2015, 2015, 2015, 2015, 2015, ~
+#> $ mes             <dbl> 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ~
+#> $ media_sif       <dbl> 1.0275361, 0.8187736, 0.8214164, 0.9543531, 1.1749167,~
+#> $ media_xco2      <dbl> 382.4614, 382.7462, 384.4948, 383.7093, 384.5950, 383.~
+#> $ flag            <lgl> TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, ~
+#> $ xco2_background <dbl> 383.9573, 383.9573, 383.9573, 383.9573, 383.9573, 383.~
+#> $ Dxco2           <dbl> -1.49589540, -1.21110228, 0.53751417, -0.24804271, 0.6~
+#> $ value           <chr> "Herbaceus Veg.", "Forest", "Forest", "Forest", "Shrub~
+#> $ LST_d           <dbl> 31.80200, 33.17500, 31.45272, 31.06999, 31.91999, 31.9~
+#> $ LST_n           <dbl> 24.72000, 24.54999, 24.46666, 23.55500, 23.98666, 23.3~
+#> $ Amp_T           <dbl> 7.081995, 8.625008, 6.986053, 7.514987, 7.933323, 8.56~
+#> $ mudança         <lgl> FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, TRUE, F~
 ```
 
 Criando o grid de refinamento para a plotagem de pontos em locais não
@@ -1380,7 +1782,7 @@ gridded(grid) = ~ X + Y
 plot(grid)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- --> Vamos
+![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- --> Vamos
 filtrar para uma data específica e criar
 
 ``` r
@@ -1388,12 +1790,12 @@ lista_datas <- dados_geo$mes_ano %>% unique()
 data_especifica <- "2015-03-01"
 df_aux <- dados_geo %>% filter(mes_ano == data_especifica) %>% 
   mutate(x = longitude, y=latitude) %>% 
-  select(x, y, LST_d) %>% 
+  select(x, y, Dxco2) %>% 
   group_by(x,y) %>% 
-  summarise(LST_d = mean(LST_d))
+  summarise(Dxco2 = mean(Dxco2))
 coordinates(df_aux)= ~ x+y
 # form<-XCO2~1
-form<-LST_d~1
+form<-Dxco2~1
 ```
 
 Verificando o Variograma experimental
@@ -1409,7 +1811,7 @@ m_vario <- fit.variogram(vario,
 
 ## validação Cruzada
 m <- vgm(1, "Sph", 10, 0)
-df_aux_g <- gstat(id=as.character(form)[2], formula = LST_d~1, data=df_aux)
+df_aux_g <- gstat(id=as.character(form)[2], formula = Dxco2~1, data=df_aux)
 df_aux_g <- gstat(df_aux_g, model =  m, fill.all = TRUE)
 x <- variogram(df_aux_g, cutoff = 20)
 df_fit = fit.lmc(x, df_aux_g)
@@ -1442,39 +1844,8 @@ out = gstat.cv(df_fit, nmax = 40, verbose = FALSE)
 #> [using ordinary kriging]
 #> [using ordinary kriging]
 #> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
-#> [using ordinary kriging]
 out %>% as.tibble() %>% 
-  ggplot(aes(x=observed,LST_d.pred)) +
+  ggplot(aes(x=observed,Dxco2.pred)) +
   geom_point() +
   geom_smooth(method = "lm") +
   ggpubr::stat_regline_equation(ggplot2::aes(
@@ -1482,7 +1853,7 @@ out %>% as.tibble() %>%
   theme_bw()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
 
 ``` r
 sqr.f1<-round(attr(m_vario, "SSErr"),4); c0<-round(m_vario$psill[[1]],4); c0_c1<-round(sum(m_vario$psill),4);a<-round(m_vario$range[[2]],2)
@@ -1514,7 +1885,7 @@ ko_var<-krige(formula=form, df_aux, grid, model=m_vario,
     debug.level=-1,  
     )
 #> [using ordinary kriging]
-#>  23% done100% done
+#> 100% done
 ```
 
 Mapa de padrões espaciais.
@@ -1529,7 +1900,7 @@ krigagem <- tibble::as.tibble(ko_var) %>%
   scale_fill_gradient(low = "yellow", high = "blue") + 
   coord_equal()+
   tema_mapa()+
-  ggplot2::labs(fill="xco2 (ppm)",title = data_especifica) +
+  ggplot2::labs(fill="Dxco2",title = data_especifica) +
   ggspatial::annotation_scale(
     location="bl",
     plot_unit="km",
@@ -1538,7 +1909,7 @@ ggsave(paste0("img/krig/",data_especifica,"_modelo.png"),krigagem)
 print(krigagem)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
 
 [Yamamoto,
 2007](https://link.springer.com/article/10.1007/s10596-007-9046-x)
@@ -1569,7 +1940,7 @@ krigagem_bt <- tibble::as.tibble(ko_var) %>%
   scale_fill_gradient(low = "yellow", high = "blue") + 
   coord_equal()+
   tema_mapa()+
-  ggplot2::labs(fill="xco2 (ppm)",title = data_especifica) +
+  ggplot2::labs(fill="Dxco2 (ppm)",title = data_especifica) +
   ggspatial::annotation_scale(
     location="bl",
     plot_unit="km",
@@ -1580,7 +1951,7 @@ krigagem_bt <- tibble::as.tibble(ko_var) %>%
 print(krigagem_bt)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
 
 ## Vamos criar um grid para testar todos os modelos
 
@@ -1589,7 +1960,7 @@ print(krigagem_bt)
 ``` r
 mypar<-expand.grid(dia_ = lista_datas, 
              modelo_ = c("Sph","Exp","Gau"),
-             variavel_ = c("XCO2","SIF","Amp_T"))
+             variavel_ = c("Dxco2"))
 ```
 
 ## Usando a `my_geo_stat` função para análise geoestatística
@@ -1598,16 +1969,22 @@ mypar<-expand.grid(dia_ = lista_datas,
 # my_geo_stat(df = dados_geo,
 #                        modelo = "Gau",
 #                          dia = "2015-01-01",
-#                          variavel="Amp_T")
-# # 
-# for(i in 1:nrow(mypar)){
-#   my_geo_stat(df = dados_geo,
-#                         modelo = mypar$modelo_[i] %>% as.character(),
-#                         dia = mypar$dia_[i] %>% as.character(),
-#                         variavel=mypar$variavel_[i]%>% as.character()
-#               )
-#   print(paste0("---",i,"/",nrow(mypar),"----"))
-# }
+#                          variavel="Dxco2")
+
+# arq_dx <- list.files("img/validacao_cruzada/")
+# datas_dx <- str_split(arq_dx, "_", simplify = TRUE)[,2]
+# modelos_dx <- str_remove(str_split(arq_dx, "_", simplify = TRUE)[,3],".png")
+# my_par_dx <- tibble(dia_=datas_dx, modelo_=modelos_dx, variavel_=c("Dxco2"))
+#   
+# writexl::write_xlsx(my_par_dx,"data/modelos_dxco2.xlsx")
+# for(i in 1:nrow(my_par_dx)){
+#    my_geo_stat(df = dados_geo,
+#                          modelo = my_par_dx$modelo_[i] %>% as.character(),
+#                          dia = my_par_dx$dia_[i] %>% as.character(),
+#                          variavel=my_par_dx$variavel_[i]%>% as.character()
+#                )
+#    print(paste0("---",i,"/",nrow(my_par_dx),"----"))
+#  }
 ```
 
 ## Após a seleção de modelos, vamos fazer todos as figuras novamente.
@@ -1732,7 +2109,7 @@ patchwork + plot_annotation(
 )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
 
 ``` r
 kw <- matopiba %>%
@@ -1775,7 +2152,7 @@ patchwork + plot_annotation(
 )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-47-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
 
 ``` r
 kw <- matopiba %>%
@@ -1818,7 +2195,7 @@ patchwork + plot_annotation(
 )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-50-1.png)<!-- -->
 
 ``` r
 season <- "dry"
@@ -1836,7 +2213,7 @@ cor(da[c(2,1,5)]) %>%
    corrplot::corrplot.mixed(upper = "ellipse", lower = "number",lower.col = "black")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
 
 ``` r
 season <- "wet"
@@ -1854,7 +2231,7 @@ cor(da[c(2,1,5)]) %>%
    corrplot::corrplot.mixed(upper = "ellipse", lower = "number",lower.col = "black")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-50-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
 
 ## Mapas para XCO2 mesma escala
 
@@ -1878,4 +2255,4 @@ pivot_longer(cols = c(`2015_XCO2_wet`,`2015_XCO2_dry`),values_to = "value",names
   labs(fill="XCO2")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->

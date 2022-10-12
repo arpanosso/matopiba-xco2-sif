@@ -181,7 +181,24 @@ matopiba %>%
 
 ## Juntando as duas bases de dados
 
+ANOMALIA CALCULADA (Dxco2)- De acordo com o trabalho de Golkar e Mousavi, 2022 (Variation of XCO2 anomaly patterns in the Middle East from OCO-2 satellite data)
+
+$$
+\Delta XCO_2 = XCO_2 \text{ individual} - XCO_2 \text{ dailybackground}
+$$
+
 ```{r}
+tab_oco2_sif_media <- tab_oco2_sif_media %>%
+  mutate(
+    flag = def_pol(longitude, latitude, poli_micro)
+  ) %>%
+  filter(flag) %>%
+  group_by(flag, ano, mes) %>%
+  mutate(
+    xco2_background = median(media_xco2, na.rm=TRUE),
+    Dxco2 = media_xco2 - xco2_background
+  )
+
 tab_oco2_sif_uso <- tab_oco2_sif_media %>%
   group_by(longitude, latitude, ano) %>% 
   summarise(
@@ -190,7 +207,11 @@ tab_oco2_sif_uso <- tab_oco2_sif_media %>%
   ) %>% 
   left_join(uso_solo_uni,c("longitude","latitude","ano")) %>% 
   drop_na()
+```
 
+
+
+```{r}
 tab_oco2_sif_media <- tab_oco2_sif_media %>%
   left_join(uso_solo_uni,c("longitude","latitude","ano")) %>% 
   drop_na()
@@ -247,6 +268,7 @@ tab_oco2_sif_media  %>%
   geom_line() +
   theme_bw()
 ```
+
 ```{r}
 tab_oco2_sif_media  %>%  
     mutate(
@@ -294,6 +316,23 @@ tab_oco2_sif_media  %>%
   geom_line() +
   theme_bw()
 ```
+
+```{r}
+tab_oco2_sif_media  %>%  
+    mutate(
+        flag_matopiba = def_pol(longitude, latitude, poli_micro)
+  ) %>% 
+  filter(flag_matopiba) %>% 
+  group_by(value, ano, mes) %>%  
+  mutate(
+    media_dxco2 = mean(Dxco2)
+  ) %>% 
+  ggplot(aes(x = mes_ano, y = media_dxco2,
+                               color=value)) +
+  geom_line() +
+  theme_bw()
+```
+
 ## Correlação
 
 ```{r}
@@ -302,11 +341,10 @@ mc <- tab_oco2_sif_media %>% ungroup() %>%
     flag_matopiba = def_pol(longitude, latitude, poli_micro)
   ) %>% 
   filter(flag_matopiba) %>% 
-  select(media_sif, media_xco2, Amp_T, LST_d, LST_n) %>% 
+  select(media_sif, media_xco2, Dxco2, Amp_T, LST_d, LST_n) %>% 
   drop_na() %>% 
   cor()
 corrplot::corrplot.mixed(mc,upper = "ellipse",lower = "number",lower.col = "black")
-
 ```
 
 
@@ -323,45 +361,42 @@ for(i in seq_along(land_uses)){
   ) %>% 
   filter(flag_matopiba) %>% 
     filter(value==land_uses[i]) %>% 
-    select(media_sif, media_xco2, Amp_T, LST_d, LST_n) %>% 
+    select(media_sif, media_xco2, Dxco2, Amp_T, LST_d, LST_n) %>% 
     drop_na() %>% 
     cor()
-  corrplot::corrplot.mixed(mc,lower = "number",lower.col = "black")
+  corrplot::corrplot.mixed(mc,upper = "ellipse",lower = "number",lower.col = "black")
 }
 ```
 
 
+# Análise de regressão para XCO2
+
 ```{r}
 sc_sif <- tab_oco2_sif_media %>% 
-  mutate(
-        flag_matopiba = def_pol(longitude, latitude, poli_micro)
-  ) %>% 
-  filter(flag_matopiba) %>% 
   summarise(media_sif = mean(media_sif, na.rm=TRUE),
-                   media_xco2 = mean(media_xco2, na.rm=TRUE)
-  ) %>% filter(media_sif <= 2.5, media_xco2 <= 392.5 & media_xco2>=377.5) %>% 
+                    media_xco2 = mean(media_xco2, na.rm=TRUE)
+  ) %>% 
+  filter(media_sif <= 2.5, media_xco2 <= 392.5 & media_xco2>=377.5) %>% 
   ggscatter(
     x = "media_sif", y = "media_xco2",
     add = "reg.line"
-  ) + # coord_cartesian(ylim = c(382.5,392))+
-  stat_cor(label.y = 395, label.x = .5) + 
-  stat_regline_equation(label.y = 396.2, label.x = .5)+
+  ) + 
+  stat_cor(label.y = 390, label.x = .5) + 
+  stat_regline_equation(label.y = 390.8, label.x = .5)+
   labs()
 
+
 sc_amp <- tab_oco2_sif_media %>% 
-  mutate(
-        flag_matopiba = def_pol(longitude, latitude, poli_micro)
-  ) %>% 
-  filter(flag_matopiba) %>% 
   summarise(media_Amp_T = mean(Amp_T, na.rm=TRUE),
                    media_xco2 = mean(media_xco2, na.rm=TRUE)
-  ) %>% filter(media_xco2 <= 392.5 & media_xco2>=377.5) %>%
+  ) %>% 
+  filter(media_xco2 <= 392.5 & media_xco2>=377.5) %>%
   ggscatter(
     x = "media_Amp_T", y = "media_xco2",
     add = "reg.line", color="red"
   ) + # coord_cartesian(ylim = c(382.5,392))+
-  stat_cor(label.y = 395, label.x = 2) + 
-  stat_regline_equation(label.y = 396.2, label.x = 2) +
+  stat_cor(label.y = 390, label.x = 2) + 
+  stat_regline_equation(label.y = 390.8, label.x = 2) +
   labs(y="")
 
 sc_sif | sc_amp
@@ -386,6 +421,8 @@ tab_oco2_sif_media %>%
   stat_cor(label.y = 390) + 
   stat_regline_equation(label.y = 391.2)
 ```
+
+
 ```{r}
 tab_oco2_sif_media %>% 
   mutate(
@@ -501,6 +538,9 @@ tab_oco2_sif_media %>%
   stat_regline_equation(label.y = 391.2)+
   labs(color = "Wet: value")
 ```
+
+
+
 ## Motivação, quais pontos apresentaram alteração do uso do solo?
 
 ```{r}
@@ -518,7 +558,7 @@ tab_oco2_sif_uso %>%
 Mapear os dados acima
 
 ```{r}
-matopiba %>% 
+  matopiba %>% 
   ggplot() +
   geom_sf(fill="white", color="black",
           size=.15, show.legend = FALSE)+
@@ -614,6 +654,24 @@ datas <- data_set_aux %>% pull(mes_ano) %>% unique()
 usos <-  data_set_aux %>% pull(value) %>% unique()
 
 for(i in 2015:2019){
+  daux <-  data_set_aux %>% 
+    filter(ano == i) %>% 
+    select(mes,value,media_xco2,media_sif,Amp_T,LST_d, LST_n) %>%
+    group_by(mes,value) %>% 
+    summarise(media_xco2=mean(media_xco2,na.rm=TRUE),
+              media_sif=mean(media_sif,na.rm=TRUE),
+              Amp_T=mean(Amp_T,na.rm=TRUE),
+              LST_d=mean(LST_d,na.rm=TRUE), 
+              LST_n=mean(LST_n,na.rm=TRUE))
+    
+  trat <- daux$value %>% as_factor()
+  media_xco2 <- daux$media_xco2
+  model<-aov(media_xco2 ~trat)
+  print(paste("Anova para ano:",i,""))
+  print(anova(model))
+  print(cat("\n"))
+  print(agricolae::LSD.test(model,"trat",alpha = 0.15,group=TRUE,console = TRUE,p.adj=c("fdr")))
+  
   for(j in seq_along(usos)){
    daux <-  data_set_aux %>% 
       filter(ano == i, value == usos[j]) %>% 
@@ -680,12 +738,12 @@ lista_datas <- dados_geo$mes_ano %>% unique()
 data_especifica <- "2015-03-01"
 df_aux <- dados_geo %>% filter(mes_ano == data_especifica) %>% 
   mutate(x = longitude, y=latitude) %>% 
-  select(x, y, LST_d) %>% 
+  select(x, y, Dxco2) %>% 
   group_by(x,y) %>% 
-  summarise(LST_d = mean(LST_d))
+  summarise(Dxco2 = mean(Dxco2))
 coordinates(df_aux)= ~ x+y
 # form<-XCO2~1
-form<-LST_d~1
+form<-Dxco2~1
 ```
 
 
@@ -702,13 +760,13 @@ m_vario <- fit.variogram(vario,
 
 ## validação Cruzada
 m <- vgm(1, "Sph", 10, 0)
-df_aux_g <- gstat(id=as.character(form)[2], formula = LST_d~1, data=df_aux)
+df_aux_g <- gstat(id=as.character(form)[2], formula = Dxco2~1, data=df_aux)
 df_aux_g <- gstat(df_aux_g, model =  m, fill.all = TRUE)
 x <- variogram(df_aux_g, cutoff = 20)
 df_fit = fit.lmc(x, df_aux_g)
 out = gstat.cv(df_fit, nmax = 40, verbose = FALSE) 
 out %>% as.tibble() %>% 
-  ggplot(aes(x=observed,LST_d.pred)) +
+  ggplot(aes(x=observed,Dxco2.pred)) +
   geom_point() +
   geom_smooth(method = "lm") +
   ggpubr::stat_regline_equation(ggplot2::aes(
@@ -759,7 +817,7 @@ krigagem <- tibble::as.tibble(ko_var) %>%
   scale_fill_gradient(low = "yellow", high = "blue") + 
   coord_equal()+
   tema_mapa()+
-  ggplot2::labs(fill="xco2 (ppm)",title = data_especifica) +
+  ggplot2::labs(fill="Dxco2",title = data_especifica) +
   ggspatial::annotation_scale(
     location="bl",
     plot_unit="km",
@@ -797,7 +855,7 @@ krigagem_bt <- tibble::as.tibble(ko_var) %>%
   scale_fill_gradient(low = "yellow", high = "blue") + 
   coord_equal()+
   tema_mapa()+
-  ggplot2::labs(fill="xco2 (ppm)",title = data_especifica) +
+  ggplot2::labs(fill="Dxco2 (ppm)",title = data_especifica) +
   ggspatial::annotation_scale(
     location="bl",
     plot_unit="km",
@@ -817,7 +875,7 @@ https://gis.stackexchange.com/questions/237574/backtransformation-of-kriging-pre
 ```{r}
 mypar<-expand.grid(dia_ = lista_datas, 
              modelo_ = c("Sph","Exp","Gau"),
-             variavel_ = c("XCO2","SIF","Amp_T"))
+             variavel_ = c("Dxco2"))
 ```
 
 ## Usando a `my_geo_stat` função para análise geoestatística
@@ -826,16 +884,22 @@ mypar<-expand.grid(dia_ = lista_datas,
 # my_geo_stat(df = dados_geo,
 #                        modelo = "Gau",
 #                          dia = "2015-01-01",
-#                          variavel="Amp_T")
-# # 
-# for(i in 1:nrow(mypar)){
-#   my_geo_stat(df = dados_geo,
-#                         modelo = mypar$modelo_[i] %>% as.character(),
-#                         dia = mypar$dia_[i] %>% as.character(),
-#                         variavel=mypar$variavel_[i]%>% as.character()
-#               )
-#   print(paste0("---",i,"/",nrow(mypar),"----"))
-# }
+#                          variavel="Dxco2")
+
+# arq_dx <- list.files("img/validacao_cruzada/")
+# datas_dx <- str_split(arq_dx, "_", simplify = TRUE)[,2]
+# modelos_dx <- str_remove(str_split(arq_dx, "_", simplify = TRUE)[,3],".png")
+# my_par_dx <- tibble(dia_=datas_dx, modelo_=modelos_dx, variavel_=c("Dxco2"))
+#   
+# writexl::write_xlsx(my_par_dx,"data/modelos_dxco2.xlsx")
+# for(i in 1:nrow(my_par_dx)){
+#    my_geo_stat(df = dados_geo,
+#                          modelo = my_par_dx$modelo_[i] %>% as.character(),
+#                          dia = my_par_dx$dia_[i] %>% as.character(),
+#                          variavel=my_par_dx$variavel_[i]%>% as.character()
+#                )
+#    print(paste0("---",i,"/",nrow(my_par_dx),"----"))
+#  }
 ```
 
 ## Após a seleção de modelos, vamos fazer todos as figuras novamente.
