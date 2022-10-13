@@ -6,6 +6,7 @@
 ``` r
 library(patchwork)
 library(tidyverse)
+library(lubridate)
 library(writexl)
 library(ggpubr)
 library(gstat)
@@ -166,7 +167,7 @@ tab_oco2_sif_media <- data_set  %>%  filter(SIF >= 0) %>%
     dplyr::mutate(
     mes_ano = lubridate::make_date(ano, mes, 1)
   )
-write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif.xlsx")
+# write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif.xlsx")
 ```
 
 ## Faça o download da tabela de médias
@@ -269,7 +270,7 @@ tab_oco2_sif_media <- tab_oco2_sif_media %>%
     Amp_T = LST_d - LST_n
   )
   
-write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
+# write_xlsx(tab_oco2_sif_media, "data/medias_oco2_sif_uso.xlsx")
 ```
 
 ## Faça o download da tabela de médias e usos do solo de 2015 a 2019
@@ -376,12 +377,20 @@ tab_oco2_sif_media  %>%
   filter(flag_matopiba) %>% 
   group_by(value, ano, mes) %>%  
   mutate(
-    media_dxco2 = mean(Dxco2)
+    media_dxco2 = mean(Dxco2),
+    dia = make_date(ano, mes, 1)
   ) %>% 
-  ggplot(aes(x = mes_ano, y = media_dxco2,
+  ggplot(aes(x = dia, y = media_dxco2,
                                color=value)) +
   geom_line() +
-  theme_bw()
+  theme_minimal() +
+  scale_x_date(name = "Data",date_breaks = "6 months",
+               date_labels = "%b %y") +
+  annotate("rect", 
+           xmin =c(as.Date("2015-04-01"),as.Date("2015-10-01")), 
+           xmax =c(as.Date("2015-10-01"),as.Date("2016-04-01")),
+           ymin = -Inf, ymax = Inf,
+           alpha = 0.3, fill = c("lightblue","pink"))
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
