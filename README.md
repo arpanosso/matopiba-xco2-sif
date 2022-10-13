@@ -2011,23 +2011,23 @@ ko_final <- readxl::read_excel("data/ko_todos.xlsx")
 ``` r
 # for(i in 1:nrow(modelos)){
 #   z <- modelos$variavel_[i]
-#   df_aux <- dados_geo %>% filter(mes_ano == modelos$dia_[i]) %>% 
-#     mutate(x = longitude, y=latitude) %>% 
+#   df_aux <- dados_geo %>% filter(mes_ano == modelos$dia_[i]) %>%
+#     mutate(x = longitude, y=latitude) %>%
 #     select(x, y, z)
 #   names(df_aux) <- c("x","y","z")
-#   df_aux <- df_aux %>% 
-#     group_by(x,y) %>% 
+#   df_aux <- df_aux %>%
+#     group_by(x,y) %>%
 #     summarise(z = mean(z,na.rm=TRUE))
 #   coordinates(df_aux)= ~ x+y
 #   vario <- variogram(z ~ 1, data=df_aux, cutoff=20, width=1.5,cressie=FALSE)
 #   m_vario <- fit.variogram(vario,
 #                            fit.method = 7,
 #                            vgm(1, modelos$modelo_[i], 10, 0))
-#   ko_var<-krige(formula=z ~1, df_aux, grid, model=m_vario, 
+#   ko_var<-krige(formula=z ~1, df_aux, grid, model=m_vario,
 #                 block=c(0,0),
 #                 nsim=0,
 #                 na.action=na.pass,
-#                 debug.level=-1,  
+#                 debug.level=-1,
 #   )
 #   if(i == 1) {
 #     ko_final <- ko_var %>% as.tibble() %>% select(X,Y,var1.pred)
@@ -2059,6 +2059,7 @@ ko_final <- readxl::read_excel("data/ko_todos.xlsx")
 #     cor() %>% 
 #     corrplot::corrplot.mixed(upper = "ellipse", lower = "number",lower.col = "black")
 # }
+# write_xlsx(ko_final,"data/ko_todos_dx.xlsx")
 ```
 
 ## Mapas Seco Chuvoso
@@ -2198,6 +2199,49 @@ patchwork + plot_annotation(
 ![](README_files/figure-gfm/unnamed-chunk-50-1.png)<!-- -->
 
 ``` r
+kw <- matopiba %>%
+  ggplot2::ggplot() +
+  ggplot2::geom_sf(fill="white", color="black",
+          size=.15, show.legend = FALSE) +
+  tema_mapa() +
+  geom_tile(data=ko_dw, aes(X,Y,fill= `2019_Dxco2_wet`) ) +
+  scale_fill_viridis_c()+
+  # scale_fill_gradient(low = "yellow", high = "blue",breaks=breaks ) +
+    geom_polygon(data=poli_micro %>% as.tibble(),
+               aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+               size=1)+
+  labs(fill="",x="Longitude",y="") +
+    ggtitle('Wet') +
+  theme(plot.title = element_text(hjust = 0.5))
+
+kd <- matopiba %>%
+  ggplot2::ggplot() +
+  ggplot2::geom_sf(fill="white", color="black",
+          size=.15, show.legend = FALSE) +
+  tema_mapa() +
+  geom_tile(data=ko_dw, aes(X,Y,fill= `2019_Dxco2_dry`) ) +
+  scale_fill_viridis_c()+
+  # scale_fill_gradient(low = "yellow", high = "blue",breaks=breaks) +
+    geom_polygon(data=poli_micro %>% as.tibble(),
+               aes(x=X,y=Y),color="red", fill="lightblue", alpha=.0,
+               size=1)+
+  labs(fill="",x="Longitude",y="Latitude") +
+    ggtitle('Dry')+
+  theme(plot.title = element_text(hjust = 0.5))
+
+patchwork  <- kd | kw
+patchwork + plot_annotation(
+  title = 'Dxco2',
+  subtitle = '2019',
+  theme = theme(plot.title = element_text(hjust = 0.5),
+                plot.subtitle = element_text(hjust = 0.5)),
+  
+)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
+
+``` r
 season <- "dry"
 year <- "2019"
 da <- ko_dw %>% 
@@ -2209,11 +2253,11 @@ names(da) <- str_remove_all(names(da),
                         c(year))
 names(da) <- str_remove_all(names(da),
                         c("_"))
-cor(da[c(2,1,5)]) %>% 
+cor(da[c(2,1,5,6)]) %>% 
    corrplot::corrplot.mixed(upper = "ellipse", lower = "number",lower.col = "black")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
 
 ``` r
 season <- "wet"
@@ -2227,11 +2271,11 @@ names(da) <- str_remove_all(names(da),
                         c(year))
 names(da) <- str_remove_all(names(da),
                         c("_"))
-cor(da[c(2,1,5)]) %>% 
+cor(da[c(2,1,5,6)]) %>% 
    corrplot::corrplot.mixed(upper = "ellipse", lower = "number",lower.col = "black")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
 
 ## Mapas para XCO2 mesma escala
 
@@ -2255,4 +2299,4 @@ pivot_longer(cols = c(`2015_XCO2_wet`,`2015_XCO2_dry`),values_to = "value",names
   labs(fill="XCO2")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
