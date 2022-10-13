@@ -237,6 +237,14 @@ tab_oco2_sif_media <- tab_oco2_sif_media %>%
 
 # RESULTADOS - variabilidade  temporal
 
+definindo as cores e a sequencia de datas para as estações
+
+```{r}
+vec_xmin <- seq.Date(as.Date("2015-04-01"),as.Date("2019-04-01"),by = "6 month")
+vec_xmax <-seq.Date(as.Date("2015-10-01"),as.Date("2019-10-01"),by = "6 month")
+cores <- rep(c("pink","lightblue"),5)[-10]
+```
+
 
 ```{r}
 tab_oco2_sif_media  %>%  
@@ -251,7 +259,15 @@ tab_oco2_sif_media  %>%
   ggplot(aes(x = mes_ano, y = media_xco2,
                                color=value)) +
   geom_line() +
-  theme_bw()
+  theme_minimal() +
+  scale_x_date(name = "Data",date_breaks = "6 months",
+               date_labels = "%b %y") +
+  annotate("rect", 
+           xmin =vec_xmin, 
+           xmax =vec_xmax,
+           ymin = -Inf, ymax = Inf,
+           alpha = 0.3, fill = cores
+  )
 ```
 
 ```{r}
@@ -267,7 +283,15 @@ tab_oco2_sif_media  %>%
   ggplot(aes(x = mes_ano, y = media_sif,
                                color=value)) +
   geom_line() +
-  theme_bw()
+  theme_minimal() +
+  scale_x_date(name = "Data",date_breaks = "6 months",
+               date_labels = "%b %y") +
+  annotate("rect", 
+           xmin =vec_xmin, 
+           xmax =vec_xmax,
+           ymin = -Inf, ymax = Inf,
+           alpha = 0.3, fill = cores
+  )
 ```
 
 ```{r}
@@ -283,7 +307,16 @@ tab_oco2_sif_media  %>%
   ggplot(aes(x = mes_ano, y = media_Amp_T,
                                color=value)) +
   geom_line() +
-  theme_bw()
+  theme_minimal() +
+  scale_x_date(name = "Data",date_breaks = "6 months",
+               date_labels = "%b %y") +
+  annotate("rect", 
+           xmin =vec_xmin, 
+           xmax =vec_xmax,
+           ymin = -Inf, ymax = Inf,
+           alpha = 0.3, fill = cores
+  )
+
 ```
 
 ```{r}
@@ -299,7 +332,15 @@ tab_oco2_sif_media  %>%
   ggplot(aes(x = mes_ano, y = media_LST_d,
                                color=value)) +
   geom_line() +
-  theme_bw()
+  theme_minimal() +
+  scale_x_date(name = "Data",date_breaks = "6 months",
+               date_labels = "%b %y") +
+  annotate("rect", 
+           xmin =vec_xmin, 
+           xmax =vec_xmax,
+           ymin = -Inf, ymax = Inf,
+           alpha = 0.3, fill = cores
+  )
 ```
 
 ```{r}
@@ -315,7 +356,15 @@ tab_oco2_sif_media  %>%
   ggplot(aes(x = mes_ano, y = media_LST_n,
                                color=value)) +
   geom_line() +
-  theme_bw()
+  theme_minimal() +
+  scale_x_date(name = "Data",date_breaks = "6 months",
+               date_labels = "%b %y") +
+  annotate("rect", 
+           xmin =vec_xmin, 
+           xmax =vec_xmax,
+           ymin = -Inf, ymax = Inf,
+           alpha = 0.3, fill = cores
+  )
 ```
 
 ```{r}
@@ -336,10 +385,11 @@ tab_oco2_sif_media  %>%
   scale_x_date(name = "Data",date_breaks = "6 months",
                date_labels = "%b %y") +
   annotate("rect", 
-           xmin =c(as.Date("2015-04-01"),as.Date("2015-10-01")), 
-           xmax =c(as.Date("2015-10-01"),as.Date("2016-04-01")),
+           xmin =vec_xmin, 
+           xmax =vec_xmax,
            ymin = -Inf, ymax = Inf,
-           alpha = 0.3, fill = c("lightblue","pink"))
+           alpha = 0.3, fill = cores
+  )
 ```
 
 ## Correlação

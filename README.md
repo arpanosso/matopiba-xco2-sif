@@ -279,6 +279,14 @@ tab_oco2_sif_media <- tab_oco2_sif_media %>%
 
 # RESULTADOS - variabilidade temporal
 
+definindo as cores e a sequencia de datas para as estações
+
+``` r
+vec_xmin <- seq.Date(as.Date("2015-04-01"),as.Date("2019-04-01"),by = "6 month")
+vec_xmax <-seq.Date(as.Date("2015-10-01"),as.Date("2019-10-01"),by = "6 month")
+cores <- rep(c("pink","lightblue"),5)[-10]
+```
+
 ``` r
 tab_oco2_sif_media  %>%  
   mutate(
@@ -292,10 +300,18 @@ tab_oco2_sif_media  %>%
   ggplot(aes(x = mes_ano, y = media_xco2,
                                color=value)) +
   geom_line() +
-  theme_bw()
+  theme_minimal() +
+  scale_x_date(name = "Data",date_breaks = "6 months",
+               date_labels = "%b %y") +
+  annotate("rect", 
+           xmin =vec_xmin, 
+           xmax =vec_xmax,
+           ymin = -Inf, ymax = Inf,
+           alpha = 0.3, fill = cores
+  )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media  %>%  
@@ -310,10 +326,18 @@ tab_oco2_sif_media  %>%
   ggplot(aes(x = mes_ano, y = media_sif,
                                color=value)) +
   geom_line() +
-  theme_bw()
+  theme_minimal() +
+  scale_x_date(name = "Data",date_breaks = "6 months",
+               date_labels = "%b %y") +
+  annotate("rect", 
+           xmin =vec_xmin, 
+           xmax =vec_xmax,
+           ymin = -Inf, ymax = Inf,
+           alpha = 0.3, fill = cores
+  )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media  %>%  
@@ -328,10 +352,18 @@ tab_oco2_sif_media  %>%
   ggplot(aes(x = mes_ano, y = media_Amp_T,
                                color=value)) +
   geom_line() +
-  theme_bw()
+  theme_minimal() +
+  scale_x_date(name = "Data",date_breaks = "6 months",
+               date_labels = "%b %y") +
+  annotate("rect", 
+           xmin =vec_xmin, 
+           xmax =vec_xmax,
+           ymin = -Inf, ymax = Inf,
+           alpha = 0.3, fill = cores
+  )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media  %>%  
@@ -346,10 +378,18 @@ tab_oco2_sif_media  %>%
   ggplot(aes(x = mes_ano, y = media_LST_d,
                                color=value)) +
   geom_line() +
-  theme_bw()
+  theme_minimal() +
+  scale_x_date(name = "Data",date_breaks = "6 months",
+               date_labels = "%b %y") +
+  annotate("rect", 
+           xmin =vec_xmin, 
+           xmax =vec_xmax,
+           ymin = -Inf, ymax = Inf,
+           alpha = 0.3, fill = cores
+  )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media  %>%  
@@ -364,10 +404,18 @@ tab_oco2_sif_media  %>%
   ggplot(aes(x = mes_ano, y = media_LST_n,
                                color=value)) +
   geom_line() +
-  theme_bw()
+  theme_minimal() +
+  scale_x_date(name = "Data",date_breaks = "6 months",
+               date_labels = "%b %y") +
+  annotate("rect", 
+           xmin =vec_xmin, 
+           xmax =vec_xmax,
+           ymin = -Inf, ymax = Inf,
+           alpha = 0.3, fill = cores
+  )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media  %>%  
@@ -387,13 +435,14 @@ tab_oco2_sif_media  %>%
   scale_x_date(name = "Data",date_breaks = "6 months",
                date_labels = "%b %y") +
   annotate("rect", 
-           xmin =c(as.Date("2015-04-01"),as.Date("2015-10-01")), 
-           xmax =c(as.Date("2015-10-01"),as.Date("2016-04-01")),
+           xmin =vec_xmin, 
+           xmax =vec_xmax,
            ymin = -Inf, ymax = Inf,
-           alpha = 0.3, fill = c("lightblue","pink"))
+           alpha = 0.3, fill = cores
+  )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
 ## Correlação
 
@@ -409,7 +458,7 @@ mc <- tab_oco2_sif_media %>% ungroup() %>%
 corrplot::corrplot.mixed(mc,upper = "ellipse",lower = "number",lower.col = "black")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
 ## Correlação por uso
 
@@ -432,19 +481,19 @@ for(i in seq_along(land_uses)){
 #> [1] "Agriculture"
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
     #> [1] "Herbaceus Veg."
 
-![](README_files/figure-gfm/unnamed-chunk-20-2.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-21-2.png)<!-- -->
 
     #> [1] "Shrubs"
 
-![](README_files/figure-gfm/unnamed-chunk-20-3.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-21-3.png)<!-- -->
 
     #> [1] "Forest"
 
-![](README_files/figure-gfm/unnamed-chunk-20-4.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-21-4.png)<!-- -->
 
 # Análise de regressão para XCO2
 
@@ -479,7 +528,7 @@ sc_amp <- tab_oco2_sif_media %>%
 sc_sif | sc_amp
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media %>% 
@@ -501,7 +550,7 @@ tab_oco2_sif_media %>%
   stat_regline_equation(label.y = 391.2)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media %>% 
@@ -523,7 +572,7 @@ tab_oco2_sif_media %>%
   stat_regline_equation(label.y = 391.2)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 ### Para período de seca
 
@@ -550,7 +599,7 @@ tab_oco2_sif_media %>%
   labs(color = "Dry: value")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media %>% 
@@ -575,7 +624,7 @@ tab_oco2_sif_media %>%
   labs(color = "Dry: value")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 ### Para período úmido
 
@@ -602,7 +651,7 @@ tab_oco2_sif_media %>%
   labs(color = "Wet: value")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media %>% 
@@ -627,7 +676,7 @@ tab_oco2_sif_media %>%
   labs(color = "Wet: value")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 ## Motivação, quais pontos apresentaram alteração do uso do solo?
 
@@ -643,7 +692,7 @@ tab_oco2_sif_uso %>%
   geom_point()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
 
 Mapear os dados acima
 
@@ -665,7 +714,7 @@ Mapear os dados acima
                size=1)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
 
 Ideal é identificar no banco de dados quais são esses pontos, por meio
 da latitude e longitude
@@ -710,7 +759,7 @@ tab_oco2_sif_media  %>% ungroup() %>%
   stat_regline_equation(label.y = 391.2)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 ``` r
 tab_oco2_sif_media  %>% ungroup() %>%
@@ -733,7 +782,7 @@ tab_oco2_sif_media  %>% ungroup() %>%
   stat_regline_equation(label.y = 391.2)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ### Tabela de estatística descritiva
 
@@ -1791,7 +1840,7 @@ gridded(grid) = ~ X + Y
 plot(grid)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- --> Vamos
+![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- --> Vamos
 filtrar para uma data específica e criar
 
 ``` r
@@ -1862,7 +1911,7 @@ out %>% as.tibble() %>%
   theme_bw()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
 
 ``` r
 sqr.f1<-round(attr(m_vario, "SSErr"),4); c0<-round(m_vario$psill[[1]],4); c0_c1<-round(sum(m_vario$psill),4);a<-round(m_vario$range[[2]],2)
@@ -1918,7 +1967,7 @@ ggsave(paste0("img/krig/",data_especifica,"_modelo.png"),krigagem)
 print(krigagem)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
 
 [Yamamoto,
 2007](https://link.springer.com/article/10.1007/s10596-007-9046-x)
@@ -1960,7 +2009,7 @@ krigagem_bt <- tibble::as.tibble(ko_var) %>%
 print(krigagem_bt)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
 
 ## Vamos criar um grid para testar todos os modelos
 
@@ -2119,7 +2168,7 @@ patchwork + plot_annotation(
 )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
 
 ``` r
 kw <- matopiba %>%
@@ -2162,7 +2211,7 @@ patchwork + plot_annotation(
 )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-50-1.png)<!-- -->
 
 ``` r
 kw <- matopiba %>%
@@ -2205,7 +2254,7 @@ patchwork + plot_annotation(
 )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-50-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
 
 ``` r
 kw <- matopiba %>%
@@ -2248,7 +2297,7 @@ patchwork + plot_annotation(
 )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
 
 ``` r
 season <- "dry"
@@ -2266,7 +2315,7 @@ cor(da[c(2,1,5,6)]) %>%
    corrplot::corrplot.mixed(upper = "ellipse", lower = "number",lower.col = "black")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
 
 ``` r
 season <- "wet"
@@ -2284,7 +2333,7 @@ cor(da[c(2,1,5,6)]) %>%
    corrplot::corrplot.mixed(upper = "ellipse", lower = "number",lower.col = "black")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
 
 ## Mapas para XCO2 mesma escala
 
@@ -2308,4 +2357,4 @@ pivot_longer(cols = c(`2015_XCO2_wet`,`2015_XCO2_dry`),values_to = "value",names
   labs(fill="XCO2")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-55-1.png)<!-- -->
